@@ -211,12 +211,19 @@ textarea.inp{min-height:90px;resize:vertical}
 .toast button{background:none;border:0;color:var(--bg);font-weight:700;text-decoration:underline;padding:2px 4px}
 
 .fab{display:none}
+.viewtabs{display:none;gap:6px;overflow-x:auto;scrollbar-width:none;margin-inline:-4px;padding:2px 4px}
+.viewtabs::-webkit-scrollbar{display:none}
+.viewtabs button{flex:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:99px;padding:6px 12px;font-weight:500;font-size:13px;white-space:nowrap}
+.viewtabs button .num{font-size:11.5px;color:var(--faint)}
+.viewtabs button[aria-current="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.viewtabs button[aria-current="true"] .num{color:var(--bg);opacity:.75}
 
 @media (max-width:900px){
   .app{grid-template-columns:minmax(0,1fr)}
   .side{position:fixed;inset:0 auto 0 0;width:min(300px,86%);z-index:45;background:var(--bg);transform:translateX(-102%);transition:transform .2s ease;height:100%;padding-top:calc(20px + env(safe-area-inset-top,0px))}
   .side.open{transform:none;box-shadow:var(--shadow)}
   .mobile-only{display:inline-flex}
+  .viewtabs{display:flex}
   .main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
   .board-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
   .board-stats .stat:last-child{grid-column:1/-1}
@@ -265,6 +272,7 @@ textarea.inp{min-height:90px;resize:vertical}
       <button class="btn primary" id="btn-new" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nova</button>
     </div>
 
+    <nav class="viewtabs" id="viewtabs" aria-label="Visões"></nav>
     <section class="board-stats" id="stats" aria-label="Placar"></section>
 
     <form class="quick" id="quick" autocomplete="off">
@@ -297,7 +305,7 @@ textarea.inp{min-height:90px;resize:vertical}
 'use strict';
 const TZ = 'America/Sao_Paulo';
 const LS_KEY = 'pauta.v1';
-const UI_KEY = 'pauta.ui.v1';
+const UI_KEY = 'pauta.ui.v2';
 const CATS = { pessoal: 'Pessoal', invista: 'Invista' };
 const STATUS = { todo: 'A fazer', doing: 'Em andamento', waiting: 'Aguardando terceiros', done: 'Concluída' };
 const PRIO = { 1: 'P1 crítica', 2: 'P2 alta', 3: 'P3 normal', 4: 'P4 baixa' };
@@ -308,10 +316,10 @@ const DEFAULT_SUBS = {
   invista: [['originacao','Originação'],['diligencia','Due diligence'],['recuperacao','Cobrança e recuperação'],['juridico','Jurídico'],['comite','Comitê e aprovações'],['investidores','Investidores e relatórios'],['gestao','Gestão e equipe']]
 };
 const VIEWS = [
+  ['abertas','Tudo em uma lista','Todas as abertas numa lista só, por prioridade e prazo'],
   ['foco','Foco de hoje','Atrasadas, de hoje e P1 sem data'],
   ['semana','Próximos 7 dias','Vencem até D+7'],
   ['aguardando','Aguardando terceiros','Bola com outra pessoa'],
-  ['abertas','Todas abertas','Tudo que não foi concluído'],
   ['semdata','Sem data','Abertas sem vencimento'],
   ['concluidas','Concluídas','Histórico de entregas']
 ];
@@ -361,7 +369,7 @@ const clone = o => JSON.parse(JSON.stringify(o));
 /* ---------- estado ---------- */
 const S = { tasks: new Map(), config: defaultConfig(), mode: 'init', loaded: false, banner: null };
 const savedUI = lsGet(UI_KEY) || {};
-const UI = { view: savedUI.view || 'foco', cat: savedUI.cat || null, sub: savedUI.sub || null, layout: savedUI.layout || 'lista', q: '', quickCat: savedUI.quickCat || 'invista' };
+const UI = { view: savedUI.view || 'abertas', cat: savedUI.cat || null, sub: savedUI.sub || null, layout: savedUI.layout || 'lista', q: '', quickCat: savedUI.quickCat || 'invista' };
 const persistUI = () => lsSet(UI_KEY, { view: UI.view, cat: UI.cat, sub: UI.sub, layout: UI.layout, quickCat: UI.quickCat });
 
 function defaultConfig(){
@@ -601,6 +609,7 @@ function renderNav(){
     const alert = id === 'foco' && lateN > 0;
     return `<button type="button" data-view="${id}" aria-current="${UI.view===id}" title="${esc(desc)}">${esc(label)}<span class="cnt ${alert?'alert':''}">${id==='concluidas' ? '' : n}</span></button>`;
   }).join('');
+  $('#viewtabs').innerHTML = VIEWS.map(([id,label]) => { const n = scoped.filter(t => matchView(t,id,today)).length; return `<button type="button" data-view="${id}" aria-current="${UI.view===id}">${esc(label)}${id==='concluidas' ? '' : `<span class="num">${n}</span>`}</button>`; }).join('');
   let html = `<button type="button" data-cat="" aria-current="${!UI.cat}">Todas as categorias<span class="cnt">${all.filter(isOpen).length}</span></button>`;
   for (const c of Object.keys(CATS)) {
     const open = all.filter(t => isOpen(t) && t.cat === c);
@@ -719,6 +728,11 @@ function renderContent(){
     el.innerHTML = `<div class="groups">${[...groups].map(([k,ts]) => `<section class="group"><h2>${k==='sem'?'Sem data de conclusão':esc(shortDate(k))}<span class="num">${ts.length}</span></h2><div class="rows">${ts.map(rowHTML).join('')}</div></section>`).join('')}</div>`;
     return;
   }
+  if (UI.view === 'abertas') {
+    list.sort((a,b) => a.priority - b.priority || (a.due||'9999').localeCompare(b.due||'9999') || (a.dueTime||'99').localeCompare(b.dueTime||'99') || a.createdAt.localeCompare(b.createdAt) || a.title.localeCompare(b.title));
+    el.innerHTML = `<div class="groups"><section class="group"><h2>Abertas<span class="num">${list.length}</span><span style="text-transform:none;letter-spacing:0;font-weight:500;color:var(--faint)">· ordem: prioridade, depois prazo</span></h2><div class="rows">${list.map(rowHTML).join('')}</div></section></div>`;
+    return;
+  }
   const groups = {}; for (const t of list) (groups[bucketOf(t,today)] ||= []).push(t);
   el.innerHTML = `<div class="groups">${BUCKETS.filter(([k]) => groups[k]).map(([k,label]) => `<section class="group ${k}"><h2>${label}<span class="num">${groups[k].length}</span></h2><div class="rows">${groups[k].map(rowHTML).join('')}</div></section>`).join('')}</div>`;
 }
@@ -730,7 +744,7 @@ function renderKanban(el){
   el.innerHTML = `<div class="kanban">${cols.map(([s,ts]) => `<div class="col" data-status="${s}"><h3>${STATUS[s]}<span class="num">${ts.length}</span></h3>${ts.map(t => `
     <div class="card" draggable="true" data-id="${esc(t.id)}" tabindex="0" role="button"><div class="card-top"><i class="pbar" data-p="${t.priority}"></i><div class="title">${esc(t.title)}</div></div>
     <div class="meta">${metaHTML(t)}</div>${t.status!=='done' && t.due ? `<div class="meta">${dueChip(t)}</div>` : ''}</div>`).join('')}</div>`).join('')}</div>
-    <p class="help" style="margin-top:8px">${UI.view === 'abertas' ? 'Arraste os cartões para mudar o status. Concluída mostra os últimos 7 dias.' : 'Arraste os cartões para mudar o status. O quadro segue a visão escolhida no menu; em Todas abertas ele mostra também as concluídas da semana.'}</p>`;
+    <p class="help" style="margin-top:8px">${UI.view === 'abertas' ? 'Arraste os cartões para mudar o status. Concluída mostra os últimos 7 dias.' : 'Arraste os cartões para mudar o status. O quadro segue a visão escolhida no menu; em Tudo em uma lista ele mostra também as concluídas da semana.'}</p>`;
 }
 function renderMatrix(el, list){
   const today = todayISO();
@@ -1023,7 +1037,9 @@ function bind(){
   $('#btn-settings').addEventListener('click', openSettings);
   $('#btn-menu').addEventListener('click', () => $('#side').classList.toggle('open'));
   $('#import-file').addEventListener('change', e => { const f = e.target.files[0]; if (f) importFile(f); e.target.value = ''; });
-  $('#nav-views').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; UI.view = b.dataset.view; persistUI(); $('#side').classList.remove('open'); render(); });
+  const pickView = e => { const b = e.target.closest('button[data-view]'); if (!b) return; UI.view = b.dataset.view; persistUI(); $('#side').classList.remove('open'); render(); };
+  $('#nav-views').addEventListener('click', pickView);
+  $('#viewtabs').addEventListener('click', pickView);
   $('#nav-cats').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     UI.cat = b.dataset.cat || null; UI.sub = b.dataset.sub || null; if (UI.cat) UI.quickCat = UI.cat;
