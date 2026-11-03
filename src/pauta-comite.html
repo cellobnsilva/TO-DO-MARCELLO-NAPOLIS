@@ -1,0 +1,597 @@
+<title>Pauta Comitê</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: cabeçalho com próximo comitê e placar; três colunas de semanas (essa, próxima, +15 dias); abaixo, A programar e Mais adiante; gaveta de edição */
+:root{
+  --bg:#F3F5F9; --surface:#FFFFFF; --surface-2:#EBEFF5; --ink:#121B2E; --muted:#5A6478; --faint:#8A93A6; --line:#D9DEE7;
+  --accent:#2B4BD3; --accent-soft:#E3E8FB; --ok:#1E7F4E; --ok-soft:#DDF2E6; --warn:#A86410; --warn-soft:#FBEFD9; --bad:#C2352B; --bad-soft:#FBE6E3;
+  --focus:#2B4BD3; --shadow:0 1px 2px rgba(18,27,46,.06),0 8px 24px rgba(18,27,46,.08);
+  --f-ui:"Schibsted Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1220; --surface:#151C2D; --surface-2:#1C2438; --ink:#E7EAF2; --muted:#A3ACC0; --faint:#6F7890; --line:#28324A;
+  --accent:#7D95FF; --accent-soft:#1F2A52; --ok:#4FD08B; --ok-soft:#14372A; --warn:#F0B356; --warn-soft:#3A2B12; --bad:#FF7A6E; --bad-soft:#3F1D1D;
+  --focus:#7D95FF; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1220; --surface:#151C2D; --surface-2:#1C2438; --ink:#E7EAF2; --muted:#A3ACC0; --faint:#6F7890; --line:#28324A;
+  --accent:#7D95FF; --accent-soft:#1F2A52; --ok:#4FD08B; --ok-soft:#14372A; --warn:#F0B356; --warn-soft:#3A2B12; --bad:#FF7A6E; --bad-soft:#3F1D1D;
+  --focus:#7D95FF; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35); color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+svg.i{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+.wrap{max-width:1360px;margin:0 auto;padding-block:20px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+.top{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.top h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.025em}
+.top .sub{color:var(--muted);font-size:13px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.top .sub select{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:2px 6px;font-size:13px}
+.top .spacer{flex:1}
+.seg{display:inline-flex;background:var(--surface-2);border-radius:9px;padding:3px;gap:2px}
+.seg button{border:0;background:none;padding:5px 12px;border-radius:7px;color:var(--muted);font-weight:500;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:0 12px;height:36px;font-weight:600;color:var(--ink);white-space:nowrap}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.ghost{background:none;border-color:transparent;color:var(--muted)}
+.btn.sm{height:28px;padding:0 9px;font-size:12px;border-radius:7px}
+.btn.danger{color:var(--bad)}
+.storage{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--faint)}
+.storage i{width:7px;height:7px;border-radius:50%;background:var(--faint)}
+.storage.db i{background:var(--ok)}
+
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.stat{background:var(--surface);padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat .k{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.stat .v{font-family:var(--f-num);font-size:22px;font-weight:600;letter-spacing:-.02em}
+.stat .d{font-size:12px;color:var(--muted)}
+
+.alert{display:flex;flex-direction:column;gap:8px;background:var(--bad-soft);border-radius:var(--r);padding:12px 14px}
+.alert b{color:var(--bad)}
+.alert .it{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
+.col{background:var(--surface-2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:220px;min-width:0}
+.col.over{outline:2px dashed var(--focus);outline-offset:-4px}
+.col-h{display:flex;flex-direction:column;gap:4px;padding:2px 4px 4px}
+.col-h .t{display:flex;align-items:baseline;gap:8px;justify-content:space-between}
+.col-h b{font-size:16px;font-weight:800;letter-spacing:-.01em}
+.col-h .when{font-family:var(--f-num);font-size:12px;color:var(--accent);font-weight:600}
+.col-h .meta{font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.col-empty{border:1px dashed var(--line);border-radius:9px;padding:16px;color:var(--faint);font-size:13px;text-align:center}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 12px;display:flex;flex-direction:column;gap:7px;cursor:grab;position:relative;min-width:0}
+.card.dragging{opacity:.5}
+.card .row1{display:flex;gap:8px;align-items:flex-start}
+.card .ord{font-family:var(--f-num);font-size:12px;color:var(--faint);min-width:16px;padding-top:1px}
+.card .name{font-weight:700;overflow-wrap:anywhere;flex:1;min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:2px 8px;border-radius:99px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.chip.goal{background:var(--accent-soft);color:var(--accent)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.warn{background:var(--warn-soft);color:var(--warn)} .chip.bad{background:var(--bad-soft);color:var(--bad)}
+.money{font-family:var(--f-num);font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.money b{color:var(--ink);font-weight:600}
+.ready{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.bar{flex:1;height:5px;background:var(--surface-2);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--warn)}
+.bar i.full{background:var(--ok)}
+.card .foot{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.card .foot .spacer{flex:1}
+.card .mv{border:1px solid var(--line);background:var(--surface);border-radius:6px;width:26px;height:24px;display:grid;place-items:center;padding:0;color:var(--muted)}
+.card .mv:hover{color:var(--ink);border-color:var(--faint)}
+.card .mv svg{width:14px;height:14px}
+
+#content{display:flex;flex-direction:column;gap:14px;min-width:0}
+#alerts:empty{display:none}
+.lower{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:14px;align-items:start}
+.lower .col{min-height:120px}
+.lower .backlog .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.lower .later .cards{display:flex;flex-direction:column;gap:10px}
+
+.hist{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow-x:auto}
+.hist table{width:100%;border-collapse:collapse;min-width:720px}
+.hist th{text-align:left;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);padding:10px 12px;border-bottom:1px solid var(--line)}
+.hist td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:top}
+.hist tr:first-child td{border-top:0}
+.hist tbody tr{cursor:pointer}
+.hist tbody tr:hover{background:var(--surface-2)}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);padding:24px;color:var(--muted)}
+.help{font-size:12.5px;color:var(--muted);margin:0}
+
+.scrim{position:fixed;inset:0;background:rgba(10,14,26,.36);z-index:40}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(500px,100%);background:var(--surface);z-index:41;box-shadow:-10px 0 40px rgba(10,14,26,.18);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-right:env(safe-area-inset-right,0px)}
+.drawer header{display:flex;align-items:center;gap:8px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.drawer header .saved{font-size:12px;color:var(--faint);margin-right:auto}
+.drawer .body{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:16px}
+.drawer .body>*{flex:none}
+.drawer footer{border-top:1px solid var(--line);padding:12px 18px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.f-title{font-size:19px;font-weight:700;border:0;outline:none;background:none;width:100%;resize:none;padding:0;line-height:1.3}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field>label,.lbl{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.inp{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px;width:100%;min-width:0;outline:none}
+.inp:focus{border-color:var(--focus)}
+textarea.inp{min-height:84px;resize:vertical}
+.chk{display:flex;flex-direction:column;gap:4px}
+.chk-item{display:flex;align-items:center;gap:8px}
+.chk-item input[type=text]{flex:1;border:0;background:none;outline:none;padding:4px 0;min-width:0}
+.chk-item input[type=text].done{text-decoration:line-through;color:var(--faint)}
+.chk-item .x{background:none;border:0;color:var(--faint);padding:2px;display:flex}
+.check{width:20px;height:20px;border-radius:50%;border:2px solid var(--faint);background:none;display:grid;place-items:center;padding:0;color:transparent;flex:none}
+.check.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.check svg{width:12px;height:12px;stroke-width:3}
+.calc{font-family:var(--f-num);font-size:12px;color:var(--muted);background:var(--bg);border-radius:8px;padding:8px 10px}
+.decision{background:var(--bg);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.decision .btns{display:flex;gap:6px;flex-wrap:wrap}
+.audit{font-size:12px;color:var(--muted);display:grid;grid-template-columns:auto 1fr;gap:3px 12px}
+.audit .num{color:var(--ink)}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--bad)}
+
+.modal{position:fixed;inset:0;display:grid;place-items:center;z-index:50;padding:16px}
+.modal .box{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);width:min(620px,100%);max-height:calc(100% - 32px);overflow:auto;padding:20px;display:flex;flex-direction:column;gap:12px}
+.modal textarea{min-height:300px;font-family:var(--f-num);font-size:12.5px}
+
+.toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:max-content;max-width:calc(100% - 32px)}
+.toast{pointer-events:auto;background:var(--ink);color:var(--bg);border-radius:10px;padding:9px 10px 9px 14px;display:flex;gap:12px;align-items:center;box-shadow:var(--shadow);font-size:13px}
+.toast button{background:none;border:0;color:var(--bg);font-weight:700;text-decoration:underline;padding:2px 4px}
+
+@media (max-width:980px){
+  .board{grid-template-columns:minmax(0,1fr)}
+  .lower{grid-template-columns:minmax(0,1fr)}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .top h1{font-size:24px}
+}
+@media (max-width:520px){
+  .grid2,.grid3{grid-template-columns:1fr}
+  .top .btn span{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Pauta Comitê</h1>
+      <div class="sub"><span id="next-label">Próximo comitê</span><label for="cfg-day">Comitê às</label><select id="cfg-day"></select><span class="storage" id="storage"><i></i><span>Conectando…</span></span></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="seg" role="group" aria-label="Visão">
+      <button type="button" data-tab="board">Programação</button>
+      <button type="button" data-tab="hist">Histórico</button>
+    </div>
+    <button class="btn primary" type="button" id="btn-new"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Novo caso</span></button>
+  </div>
+  <section class="stats" id="stats" aria-label="Resumo"></section>
+  <div id="alerts"></div>
+  <div id="content"></div>
+</div>
+<div id="drawer-root"></div>
+<div id="modal-root"></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+const TZ = 'America/Sao_Paulo';
+const LS_KEY = 'pauta-comite.v1';
+const UI_KEY = 'pauta-comite.ui.v1';
+const TYPES = { npl: 'Aquisição de crédito (NPL)', estruturado: 'Crédito estruturado', acordo: 'Acordo / renegociação', revisao: 'Revisão de caso', outro: 'Outro' };
+const GOALS = { aprovacao: 'Aprovação', informativo: 'Informativo', acompanhamento: 'Acompanhamento', ratificacao: 'Ratificação' };
+const DECISIONS = { aprovado: ['Aprovado','ok'], ressalvas: ['Aprovado com ressalvas','ok'], diligencia: ['Diligência adicional','warn'], reprovado: ['Reprovado','bad'] };
+const DEFAULT_CHECK = ['Memorando / one-pager', 'Modelagem e fluxo de recuperação', 'Diligência jurídica', 'Garantias avaliadas', 'Proposta e preço definidos'];
+const WEEKDAYS = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+const COLS = [[0,'Essa semana'],[1,'Semana que vem'],[2,'Daqui 15 dias']];
+const ICON = {
+  check:'<svg class="i" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  left:'<svg class="i" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>',
+  right:'<svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
+  x:'<svg class="i" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  copy:'<svg class="i" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>',
+  user:'<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+  clock:'<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  trash:'<svg class="i" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>'
+};
+
+/* datas */
+const fmtISO = new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'});
+const todayISO = () => fmtISO.format(new Date());
+const toUTC = iso => { const [y,m,d] = iso.split('-').map(Number); return Date.UTC(y,m-1,d); };
+const fromUTC = ms => new Date(ms).toISOString().slice(0,10);
+const addDays = (iso,n) => fromUTC(toUTC(iso) + n*864e5);
+const diffDays = (a,b) => Math.round((toUTC(a) - toUTC(b))/864e5);
+const weekday = iso => new Date(toUTC(iso)).getUTCDay();
+const weekStart = iso => addDays(iso, -((weekday(iso)+6)%7));
+const thisWeek = () => weekStart(todayISO());
+const weekOffset = w => Math.round(diffDays(w, thisWeek())/7);
+const fmtWd = new Intl.DateTimeFormat('pt-BR',{timeZone:'UTC',weekday:'short'});
+const fmtStamp = new Intl.DateTimeFormat('pt-BR',{timeZone:TZ,day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+const dm = iso => iso.slice(8,10) + '/' + iso.slice(5,7);
+const shortDate = iso => fmtWd.format(new Date(toUTC(iso))).replace(/\./g,'') + ' ' + dm(iso);
+const stamp = ts => ts ? fmtStamp.format(new Date(ts)).replace(',', '') : '';
+const isoOfStamp = ts => fmtISO.format(new Date(ts));
+
+/* utilidades */
+const $ = (s,r=document) => r.querySelector(s);
+const $$ = (s,r=document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = p => (p||'k') + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const lsGet = k => { try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return null; } };
+const lsSet = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e) { return false; } };
+const clone = o => JSON.parse(JSON.stringify(o));
+const parseNum = v => { const s = String(v ?? '').trim().replace(/\s/g,'').replace(/\./g,'').replace(',', '.'); if (!s) return null; const n = Number(s); return isFinite(n) ? n : null; };
+const fmtNum = (n, d=2) => n == null ? '' : n.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+const mm = n => n == null ? '' : 'R$ ' + fmtNum(n) + ' MM';
+
+/* estado */
+const S = { cases: new Map(), config: { day: 4 }, mode: 'init', loaded: false };
+const savedUI = lsGet(UI_KEY) || {};
+const UI = { tab: savedUI.tab || 'board' };
+const persistUI = () => lsSet(UI_KEY, { tab: UI.tab });
+
+function normalizeCase(c, id){
+  return {
+    id: id || c.id || uid(),
+    name: String(c.name || '(sem nome)'),
+    type: TYPES[c.type] ? c.type : 'npl',
+    goal: GOALS[c.goal] ? c.goal : 'aprovacao',
+    week: /^\d{4}-\d{2}-\d{2}$/.test(c.week||'') ? weekStart(c.week) : '',
+    order: Number.isFinite(+c.order) ? +c.order : Date.now(),
+    presenter: String(c.presenter || ''),
+    minutes: +c.minutes > 0 ? +c.minutes : 15,
+    face: c.face == null || c.face === '' ? null : +c.face,
+    price: c.price == null || c.price === '' ? null : +c.price,
+    rate: String(c.rate || ''),
+    counterparties: String(c.counterparties || ''),
+    checklist: Array.isArray(c.checklist) ? c.checklist.map(x => ({ id: x.id || uid('c'), text: String(x.text||''), done: !!x.done })) : DEFAULT_CHECK.map((t,i) => ({ id: 'c'+i, text: t, done: false })),
+    decision: DECISIONS[c.decision] ? c.decision : 'pending',
+    decisionNote: String(c.decisionNote || ''),
+    decidedAt: c.decidedAt || '',
+    postponed: +c.postponed || 0,
+    notes: String(c.notes || ''),
+    link: String(c.link || ''),
+    createdAt: c.createdAt || new Date().toISOString(),
+    updatedAt: c.updatedAt || c.createdAt || new Date().toISOString()
+  };
+}
+const pending = c => c.decision === 'pending';
+const readiness = c => { const n = c.checklist.length; const d = c.checklist.filter(x => x.done).length; return { n, d, full: n > 0 && d === n }; };
+const committeeDate = w => addDays(w, (S.config.day + 6) % 7);
+
+/* armazenamento */
+const Store = {
+  db: null, chains: new Map(),
+  async start(){
+    let db = null, user = null; const c = window.claude;
+    if (c && typeof c.use === 'function') { try { [db, user] = await Promise.all([c.use('db'), c.use('user')]); } catch(e) {} }
+    let owner = true; if (db && user) { try { owner = await user.isOwner(); } catch(e) {} }
+    if (db && owner) return this.startDb(db);
+    this.startLocal();
+  },
+  startLocal(){
+    S.mode = 'local'; const saved = lsGet(LS_KEY);
+    if (saved) { S.config = { day: +saved.config?.day || 4 }; S.cases = new Map((saved.cases||[]).map(c => { const n = normalizeCase(c); return [n.id, n]; })); }
+    S.loaded = true; render();
+  },
+  persistLocal(){ if (S.mode === 'local' && !lsSet(LS_KEY, { config: S.config, cases: [...S.cases.values()] })) toast('Não consegui salvar neste navegador.'); },
+  startDb(db){
+    S.mode = 'db'; this.db = db; render();
+    const timer = setTimeout(() => { if (!S.loaded) toast('O banco ainda não respondeu. Os casos aparecem quando a conexão voltar.'); }, 10000);
+    db.collection('cases').onSnapshot(snap => {
+      S.cases = new Map(snap.docs.map(d => [d.id, normalizeCase(d.data(), d.id)]));
+      if (!snap.metadata.fromCache) { clearTimeout(timer); S.loaded = true; }
+      render();
+    }, err => { clearTimeout(timer); S.loaded = true; toast('Perdi a conexão com o banco (' + (err && err.code || 'erro') + '). Recarregue a página.'); render(); });
+    db.doc('config/main').onSnapshot(snap => { if (snap.exists) { const d = +snap.data().day; if (d >= 0 && d <= 6) S.config.day = d; render(); } }, () => {});
+  },
+  queue(key, fn){
+    const next = (this.chains.get(key) || Promise.resolve()).then(fn).catch(e => toast('Não consegui salvar (' + (e && e.code || 'erro') + ').'));
+    this.chains.set(key, next); return next;
+  },
+  save(c){
+    c.updatedAt = new Date().toISOString(); S.cases.set(c.id, c);
+    if (S.mode === 'db') { const body = clone(c); delete body.id; this.queue('c:'+c.id, () => this.db.collection('cases').doc(c.id).set(body)); }
+    else this.persistLocal();
+    render();
+  },
+  remove(id){
+    S.cases.delete(id);
+    if (S.mode === 'db') this.queue('c:'+id, () => this.db.collection('cases').doc(id).delete()); else this.persistLocal();
+    render();
+  },
+  saveConfig(){
+    if (S.mode === 'db') this.queue('config', () => this.db.doc('config/main').set(clone(S.config))); else this.persistLocal();
+    render();
+  }
+};
+
+/* render */
+const cmp = (a,b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt);
+function render(){
+  const tw = thisWeek(); const cd = committeeDate(tw); const today = todayISO();
+  const next = cd >= today ? cd : committeeDate(addDays(tw,7));
+  const dd = diffDays(next, today);
+  $('#next-label').innerHTML = `Próximo comitê: <b class="num">${esc(shortDate(next))}</b> <span class="num" style="color:var(--faint)">(${dd === 0 ? 'hoje' : 'em ' + dd + ' d'})</span> ·`;
+  $('#cfg-day').innerHTML = [1,2,3,4,5].map(d => `<option value="${d}" ${S.config.day===d?'selected':''}>${WEEKDAYS[d]}</option>`).join('');
+  $$('[data-tab]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tab === UI.tab)));
+  const st = $('#storage'); st.className = 'storage' + (S.mode === 'db' ? ' db' : '');
+  st.querySelector('span').textContent = S.mode === 'db' ? (S.loaded ? 'Salvo na nuvem (privado)' : 'Carregando…') : S.mode === 'local' ? 'Salvo só neste navegador' : 'Conectando…';
+  renderStats(); renderAlerts();
+  if (UI.tab === 'hist') renderHist(); else renderBoard();
+}
+function renderStats(){
+  const all = [...S.cases.values()]; const open = all.filter(pending);
+  const in3 = open.filter(c => c.week && weekOffset(c.week) >= 0 && weekOffset(c.week) <= 2);
+  const ready = in3.filter(c => readiness(c).full).length;
+  const exp = in3.reduce((s,c) => s + (c.price || 0), 0);
+  const backlog = open.filter(c => !c.week).length;
+  const since = addDays(todayISO(), -89);
+  const dec = all.filter(c => !pending(c) && c.decidedAt && isoOfStamp(c.decidedAt) >= since);
+  const appr = dec.filter(c => c.decision === 'aprovado' || c.decision === 'ressalvas').length;
+  $('#stats').innerHTML = `
+    <div class="stat"><span class="k">Programados 3 semanas</span><span class="v">${in3.length}</span><span class="d">${backlog} a programar</span></div>
+    <div class="stat"><span class="k">Prontos para levar</span><span class="v">${ready}<span style="font-size:14px;color:var(--faint)">/${in3.length}</span></span><span class="d">Checklist de preparo completo</span></div>
+    <div class="stat"><span class="k">Proposta em pauta</span><span class="v">${exp ? fmtNum(exp,1) : '0'}</span><span class="d">R$ MM somados nas 3 semanas</span></div>
+    <div class="stat"><span class="k">Aprovação 90 dias</span><span class="v">${dec.length ? Math.round(appr/dec.length*100) + '%' : '—'}</span><span class="d">${dec.length ? appr + ' de ' + dec.length + ' decididos' : 'Sem decisões registradas'}</span></div>`;
+}
+function renderAlerts(){
+  const late = [...S.cases.values()].filter(c => pending(c) && c.week && weekOffset(c.week) < 0).sort(cmp);
+  $('#alerts').innerHTML = late.length ? `<div class="alert"><b>${late.length === 1 ? '1 caso passou' : late.length + ' casos passaram'} da semana programada sem decisão registrada</b>
+    ${late.map(c => `<div class="it"><span style="font-weight:600">${esc(c.name)}</span><span class="num" style="font-size:12px;color:var(--muted)">era ${esc(shortDate(committeeDate(c.week)))}</span><button class="btn sm" type="button" data-move="${esc(c.id)}" data-to="0">Mover para essa semana</button><button class="btn sm" type="button" data-open="${esc(c.id)}">Registrar decisão</button></div>`).join('')}</div>` : '';
+}
+function cardHTML(c, idx){
+  const r = readiness(c); const pct = r.n ? Math.round(r.d / r.n * 100) : 0;
+  const desagio = c.face && c.price != null && c.face > 0 ? Math.round((1 - c.price / c.face) * 100) : null;
+  const off = c.week ? weekOffset(c.week) : null;
+  return `<article class="card" draggable="true" data-id="${esc(c.id)}" tabindex="0" role="button" aria-label="Abrir ${esc(c.name)}">
+    <div class="row1">${idx != null ? `<span class="ord">${idx+1}.</span>` : ''}<span class="name">${esc(c.name)}</span></div>
+    <div class="chips"><span class="chip goal">${GOALS[c.goal]}</span><span class="chip">${esc(TYPES[c.type])}</span>${c.postponed ? `<span class="chip warn">Adiado ${c.postponed}x</span>` : ''}</div>
+    ${c.counterparties ? `<div class="money">${esc(c.counterparties)}</div>` : ''}
+    ${c.face != null || c.price != null ? `<div class="money">${c.face != null ? `<span>Face <b>${fmtNum(c.face)}</b></span>` : ''}${c.price != null ? `<span>Proposta <b>${fmtNum(c.price)}</b></span>` : ''}${desagio != null ? `<span>Deságio <b>${desagio}%</b></span>` : ''}${c.rate ? `<span>${esc(c.rate)}</span>` : ''}</div>` : ''}
+    <div class="ready"><span class="num">${r.d}/${r.n}</span><div class="bar"><i class="${r.full ? 'full' : ''}" style="width:${pct}%"></i></div><span>${r.full ? 'Pronto' : 'Em preparo'}</span></div>
+    <div class="foot">${c.presenter ? `<span style="display:inline-flex;gap:4px;align-items:center">${ICON.user}${esc(c.presenter)}</span>` : ''}<span class="num" style="display:inline-flex;gap:4px;align-items:center">${ICON.clock}${c.minutes} min</span><span class="spacer"></span>
+      <button type="button" class="mv" data-shift="${esc(c.id)}" data-by="-1" aria-label="Semana anterior" ${off === null || off <= 0 ? 'disabled style="opacity:.35"' : ''}>${ICON.left}</button>
+      <button type="button" class="mv" data-shift="${esc(c.id)}" data-by="1" aria-label="${off === null ? 'Programar para essa semana' : 'Próxima semana'}">${ICON.right}</button></div>
+  </article>`;
+}
+function renderBoard(){
+  const open = [...S.cases.values()].filter(pending);
+  if (S.mode === 'db' && !S.loaded) { $('#content').innerHTML = `<div class="empty">Carregando a pauta…</div>`; return; }
+  const tw = thisWeek();
+  const cols = COLS.map(([off,label]) => {
+    const w = addDays(tw, off*7); const list = open.filter(c => c.week === w).sort(cmp);
+    const mins = list.reduce((s,c) => s + c.minutes, 0); const ready = list.filter(c => readiness(c).full).length;
+    return `<section class="col" data-week="${w}">
+      <div class="col-h"><div class="t"><b>${label}</b><span class="when">Comitê ${esc(shortDate(committeeDate(w)))}</span></div>
+        <div class="meta"><span class="num">${list.length} ${list.length===1?'caso':'casos'} · ${mins} min</span><span>${ready} ${ready===1?'pronto':'prontos'}</span><span style="flex:1"></span>${list.length ? `<button class="btn sm" type="button" data-agenda="${w}">${ICON.copy}Copiar pauta</button>` : ''}</div></div>
+      ${list.length ? list.map((c,i) => cardHTML(c,i)).join('') : `<div class="col-empty">Nenhum caso. Arraste de "A programar" ou use a seta → no cartão.</div>`}
+    </section>`;
+  }).join('');
+  const backlog = open.filter(c => !c.week).sort(cmp);
+  const later = open.filter(c => c.week && weekOffset(c.week) > 2).sort((a,b) => a.week.localeCompare(b.week) || cmp(a,b));
+  $('#content').innerHTML = `<div class="board">${cols}</div>
+    <div class="lower">
+      <section class="col backlog" data-week=""><div class="col-h"><div class="t"><b>A programar</b><span class="num" style="font-size:12px;color:var(--muted)">${backlog.length} ${backlog.length===1?'caso':'casos'}</span></div><div class="meta">Casos que vão a comitê, ainda sem semana definida.</div></div>
+        <div class="cards">${backlog.map(c => cardHTML(c)).join('') || `<div class="col-empty">Tudo programado.</div>`}</div></section>
+      <section class="col later" data-week="later"><div class="col-h"><div class="t"><b>Mais adiante</b><span class="num" style="font-size:12px;color:var(--muted)">${later.length}</span></div><div class="meta">Três semanas ou mais à frente.</div></div>
+        <div class="cards">${later.map(c => `<div style="display:flex;flex-direction:column;gap:4px"><span class="num" style="font-size:11.5px;color:var(--accent);font-weight:600">Comitê ${esc(shortDate(committeeDate(c.week)))}</span>${cardHTML(c)}</div>`).join('') || `<div class="col-empty">Nada além de 15 dias.</div>`}</div></section>
+    </div>
+    <p class="help">Arraste os cartões entre as colunas ou use as setas. A ordem dentro da coluna é a ordem da pauta (arraste sobre outro cartão para reordenar). As colunas avançam sozinhas a cada segunda-feira.</p>`;
+}
+function renderHist(){
+  const done = [...S.cases.values()].filter(c => !pending(c)).sort((a,b) => (b.decidedAt||'').localeCompare(a.decidedAt||''));
+  if (!done.length) { $('#content').innerHTML = `<div class="empty">Nenhuma decisão registrada ainda. Abra um caso e use "Registrar decisão" depois do comitê.</div>`; return; }
+  $('#content').innerHTML = `<div class="hist"><table><thead><tr><th>Decidido em</th><th>Caso</th><th>Decisão</th><th>Objetivo</th><th>Proposta</th><th>Observação</th></tr></thead><tbody>
+    ${done.map(c => `<tr data-open="${esc(c.id)}"><td class="num">${esc(c.decidedAt ? shortDate(isoOfStamp(c.decidedAt)) : '')}</td><td style="font-weight:600">${esc(c.name)}${c.postponed ? ` <span class="chip warn">adiado ${c.postponed}x</span>` : ''}</td><td><span class="chip ${DECISIONS[c.decision][1]}">${DECISIONS[c.decision][0]}</span></td><td>${GOALS[c.goal]}</td><td class="num">${esc(mm(c.price))}</td><td style="color:var(--muted)">${esc(c.decisionNote)}</td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+
+/* mover */
+function moveTo(id, week, beforeId){
+  const c = S.cases.get(id); if (!c) return;
+  c.week = week;
+  const peers = [...S.cases.values()].filter(x => pending(x) && x.week === week && x.id !== id).sort(cmp);
+  if (beforeId) { const i = peers.findIndex(x => x.id === beforeId); peers.splice(i < 0 ? peers.length : i, 0, c); }
+  else peers.push(c);
+  peers.forEach((x,i) => { if (x.order !== (i+1)*10 || x === c) { x.order = (i+1)*10; Store.save(x); } });
+}
+function shift(id, by){
+  const c = S.cases.get(id); if (!c) return;
+  const tw = thisWeek();
+  let w;
+  if (!c.week) w = by > 0 ? tw : '';
+  else { const off = weekOffset(c.week); w = off + by < 0 ? (by < 0 ? '' : tw) : addDays(tw, (Math.max(off,0) + by) * 7); }
+  moveTo(id, w);
+}
+
+/* pauta em texto */
+function agendaText(w){
+  const list = [...S.cases.values()].filter(c => pending(c) && c.week === w).sort(cmp);
+  const lines = [`PAUTA COMITÊ · ${shortDate(committeeDate(w))}`, ''];
+  list.forEach((c,i) => {
+    lines.push(`${i+1}. ${c.name} · ${GOALS[c.goal]} · ${TYPES[c.type]} · ${c.minutes} min${c.presenter ? ' · apresenta ' + c.presenter : ''}`);
+    const money = [c.face != null ? 'Face ' + mm(c.face) : '', c.price != null ? 'Proposta ' + mm(c.price) : '', c.face && c.price != null ? 'Deságio ' + Math.round((1 - c.price/c.face)*100) + '%' : '', c.rate].filter(Boolean).join(' | ');
+    if (money) lines.push('   ' + money);
+    if (c.counterparties) lines.push('   Credores/contrapartes: ' + c.counterparties);
+    const r = readiness(c); if (!r.full) lines.push('   Pendente: ' + c.checklist.filter(x => !x.done).map(x => x.text).join('; '));
+  });
+  lines.push('', `Total: ${list.length} ${list.length===1?'caso':'casos'}, ${list.reduce((s,c) => s + c.minutes, 0)} min`);
+  return lines.join('\n');
+}
+function showAgenda(w){
+  const txt = agendaText(w);
+  $('#modal-root').innerHTML = `<div class="scrim" data-mclose></div><div class="modal" data-mclose><div class="box" role="dialog" aria-modal="true" aria-label="Pauta em texto">
+    <div style="display:flex;align-items:center;gap:8px"><b style="flex:1;font-size:17px">Pauta para colar no e-mail ou WhatsApp</b><button class="btn ghost" type="button" data-mclose aria-label="Fechar">${ICON.x}</button></div>
+    <label class="sr" for="agenda-txt">Texto da pauta</label><textarea id="agenda-txt" class="inp" readonly>${esc(txt)}</textarea>
+    <div style="display:flex;gap:8px"><button class="btn primary" type="button" id="agenda-copy">${ICON.copy}Copiar</button></div></div></div>`;
+}
+
+/* gaveta */
+const D = { id: null, draft: null, isNew: false, timer: null, confirmDel: false };
+function openDrawer(id){
+  if (D.timer) flush();
+  if (id) { const c = S.cases.get(id); if (!c) return; D.draft = clone(c); D.isNew = false; }
+  else { D.draft = normalizeCase({ name: '' }); D.draft.name = ''; D.isNew = true; }
+  D.id = D.draft.id; D.confirmDel = false; renderDrawer();
+  if (D.isNew) setTimeout(() => $('#f-name') && $('#f-name').focus(), 30);
+}
+function closeDrawer(){ flush(); D.draft = null; D.id = null; $('#drawer-root').innerHTML = ''; }
+function schedule(){ clearTimeout(D.timer); const l = $('#saved-label'); if (l) l.textContent = 'Editando…'; D.timer = setTimeout(flush, 600); }
+function flush(){
+  clearTimeout(D.timer); D.timer = null; const d = D.draft; if (!d) return;
+  if (!d.name.trim()) { if (D.isNew) return; d.name = S.cases.get(d.id)?.name || '(sem nome)'; }
+  const cur = S.cases.get(d.id);
+  if (!cur || JSON.stringify({...cur, updatedAt:0}) !== JSON.stringify({...d, updatedAt:0})) {
+    if (D.isNew) { const peers = [...S.cases.values()].filter(x => pending(x) && x.week === d.week); d.order = (peers.reduce((m,x) => Math.max(m, x.order), 0) || 0) + 10; }
+    Store.save(normalizeCase(d)); D.draft = clone(S.cases.get(d.id)); D.isNew = false;
+  }
+  const l = $('#saved-label'); if (l) l.textContent = 'Salvo';
+  const calc = $('#calc'); if (calc) calc.innerHTML = calcHTML(D.draft);
+}
+function calcHTML(d){
+  if (d.face && d.price != null) return `Deságio <b>${fmtNum((1 - d.price/d.face)*100,1)}%</b> · preço de <b>${fmtNum(d.price/d.face*100,1)}%</b> do face`;
+  return 'Preencha face e proposta para ver o deságio.';
+}
+function weekOptions(cur){
+  const tw = thisWeek(); const opts = [['', 'A programar']];
+  for (let i = 0; i < 8; i++) { const w = addDays(tw, i*7); opts.push([w, (i===0?'Essa semana':i===1?'Semana que vem':i===2?'Daqui 15 dias':'Em ' + i + ' semanas') + ' · comitê ' + shortDate(committeeDate(w))]); }
+  if (cur && !opts.some(o => o[0] === cur)) opts.push([cur, 'Comitê ' + shortDate(committeeDate(cur)) + (weekOffset(cur) < 0 ? ' (passou)' : '')]);
+  return opts.map(([v,l]) => `<option value="${v}" ${v===cur?'selected':''}>${esc(l)}</option>`).join('');
+}
+function renderDrawer(){
+  const d = D.draft; const dec = !pending(d);
+  $('#drawer-root').innerHTML = `<div class="scrim" data-close></div>
+  <aside class="drawer" role="dialog" aria-modal="true" aria-label="Caso">
+    <header><span class="saved" id="saved-label">${D.isNew ? 'Novo caso' : 'Salvo'}</span><button class="btn ghost" type="button" data-close aria-label="Fechar">${ICON.x}</button></header>
+    <div class="body">
+      <label class="sr" for="f-name">Nome do caso</label>
+      <textarea id="f-name" class="f-title" rows="1" placeholder="Nome do caso">${esc(d.name)}</textarea>
+      <div class="grid2">
+        <div class="field"><label for="f-week">Semana do comitê</label><select id="f-week" class="inp">${weekOptions(d.week)}</select></div>
+        <div class="field"><label for="f-goal">Objetivo na pauta</label><select id="f-goal" class="inp">${Object.entries(GOALS).map(([k,v]) => `<option value="${k}" ${d.goal===k?'selected':''}>${v}</option>`).join('')}</select></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label for="f-type">Tipo</label><select id="f-type" class="inp">${Object.entries(TYPES).map(([k,v]) => `<option value="${k}" ${d.type===k?'selected':''}>${v}</option>`).join('')}</select></div>
+        <div class="field"><label for="f-presenter">Quem apresenta</label><input id="f-presenter" class="inp" value="${esc(d.presenter)}" placeholder="Ex.: Marcello, Pedro"></div>
+      </div>
+      <div class="grid3">
+        <div class="field"><label for="f-face">Face (R$ MM)</label><input id="f-face" class="inp num" inputmode="decimal" value="${esc(d.face != null ? fmtNum(d.face) : '')}" placeholder="0,00"></div>
+        <div class="field"><label for="f-price">Proposta (R$ MM)</label><input id="f-price" class="inp num" inputmode="decimal" value="${esc(d.price != null ? fmtNum(d.price) : '')}" placeholder="0,00"></div>
+        <div class="field"><label for="f-min">Tempo de pauta</label><select id="f-min" class="inp">${[5,10,15,20,30,45,60].map(m => `<option value="${m}" ${d.minutes===m?'selected':''}>${m} min</option>`).join('')}</select></div>
+      </div>
+      <div class="calc" id="calc">${calcHTML(d)}</div>
+      <div class="grid2">
+        <div class="field"><label for="f-rate">Taxa / prazo</label><input id="f-rate" class="inp" value="${esc(d.rate)}" placeholder="Ex.: 2,5% a.m., 36 meses"></div>
+        <div class="field"><label for="f-cp">Credores / contrapartes</label><input id="f-cp" class="inp" value="${esc(d.counterparties)}" placeholder="Ex.: Itaú, Santander"></div>
+      </div>
+      <div class="field"><span class="lbl">Preparo para o comitê</span>
+        <div class="chk">${d.checklist.map(x => `<div class="chk-item"><button type="button" class="check ${x.done?'on':''}" data-chk="${esc(x.id)}" aria-label="Marcar">${ICON.check}</button><input type="text" value="${esc(x.text)}" class="${x.done?'done':''}" data-chktext="${esc(x.id)}" aria-label="Item"><button type="button" class="x" data-chkdel="${esc(x.id)}" aria-label="Remover">${ICON.x}</button></div>`).join('')}</div>
+        <input id="f-chk-new" class="inp" placeholder="Adicionar item de preparo e Enter"></div>
+      <div class="field"><label for="f-notes">Notas e tese</label><textarea id="f-notes" class="inp" placeholder="Tese, riscos, pontos que o comitê vai perguntar">${esc(d.notes)}</textarea></div>
+      <div class="field"><label for="f-link">Link do material</label><input id="f-link" class="inp" type="url" value="${esc(d.link)}" placeholder="https://"></div>
+      ${!D.isNew ? `<div class="decision"><span class="lbl">Registrar decisão</span>
+        ${dec ? `<div><span class="chip ${DECISIONS[d.decision][1]}">${DECISIONS[d.decision][0]}</span> <span class="num" style="font-size:12px;color:var(--muted)">em ${esc(stamp(d.decidedAt))}</span></div>` : ''}
+        <div class="btns">${Object.entries(DECISIONS).map(([k,[l]]) => `<button type="button" class="btn sm" data-decide="${k}" ${d.decision===k?'style="border-color:var(--ink)"':''}>${l}</button>`).join('')}
+          <button type="button" class="btn sm" data-decide="adiar">Adiar 1 semana</button>${dec ? `<button type="button" class="btn sm ghost" data-decide="pending">Voltar para a pauta</button>` : ''}</div>
+        <input id="f-dnote" class="inp" value="${esc(d.decisionNote)}" placeholder="Condições, ressalvas ou motivo"></div>` : ''}
+      <div class="audit"><span>Criado</span><span class="num">${esc(stamp(d.createdAt))}</span><span>Atualizado</span><span class="num">${esc(stamp(d.updatedAt))}</span>${d.postponed ? `<span>Adiamentos</span><span class="num">${d.postponed}</span>` : ''}</div>
+    </div>
+    <footer>${D.confirmDel ? `<div class="confirm">Apagar este caso?<button class="btn danger" type="button" id="del-yes">Apagar</button><button class="btn" type="button" id="del-no">Cancelar</button></div>` :
+      `${!D.isNew ? `<button class="btn danger" type="button" id="del">${ICON.trash}Apagar</button>` : `<span class="help">Salva sozinho assim que tiver nome.</span>`}<span style="flex:1"></span><button class="btn primary" type="button" data-close>Fechar</button>`}</footer>
+  </aside>`;
+}
+function bindDrawer(){
+  const root = $('#drawer-root');
+  root.addEventListener('input', e => {
+    const d = D.draft; if (!d) return; const el = e.target;
+    const map = { 'f-name': v => d.name = v.replace(/\n/g,' '), 'f-presenter': v => d.presenter = v, 'f-rate': v => d.rate = v, 'f-cp': v => d.counterparties = v, 'f-notes': v => d.notes = v, 'f-link': v => d.link = v.trim(), 'f-dnote': v => d.decisionNote = v, 'f-face': v => d.face = parseNum(v), 'f-price': v => d.price = parseNum(v) };
+    if (map[el.id]) map[el.id](el.value);
+    else if (el.dataset.chktext) { const x = d.checklist.find(x => x.id === el.dataset.chktext); if (x) x.text = el.value; }
+    else return;
+    schedule();
+  });
+  root.addEventListener('change', e => {
+    const d = D.draft; if (!d) return; const el = e.target;
+    if (el.id === 'f-week') { if (D.isNew || !S.cases.has(d.id)) { d.week = el.value; flush(); return; } flush(); moveTo(d.id, el.value); D.draft = clone(S.cases.get(d.id) || d); return; }
+    if (el.id === 'f-goal') d.goal = el.value; else if (el.id === 'f-type') d.type = el.value; else if (el.id === 'f-min') d.minutes = +el.value; else return;
+    flush();
+  });
+  root.addEventListener('keydown', e => {
+    const d = D.draft; if (!d) return;
+    if (e.target.id === 'f-name' && e.key === 'Enter') { e.preventDefault(); flush(); }
+    if (e.target.id === 'f-chk-new' && e.key === 'Enter') { e.preventDefault(); const v = e.target.value.trim(); if (!v) return; d.checklist.push({ id: uid('c'), text: v, done: false }); flush(); renderDrawer(); $('#f-chk-new').focus(); }
+  });
+  root.addEventListener('click', e => {
+    const d = D.draft; if (!d) return; const t = e.target.closest('button,[data-close]'); if (!t) return;
+    if (t.hasAttribute('data-close')) return closeDrawer();
+    if (t.dataset.chk) { const x = d.checklist.find(x => x.id === t.dataset.chk); if (x) x.done = !x.done; flush(); renderDrawer(); return; }
+    if (t.dataset.chkdel) { d.checklist = d.checklist.filter(x => x.id !== t.dataset.chkdel); flush(); renderDrawer(); return; }
+    if (t.dataset.decide) {
+      const k = t.dataset.decide; const before = clone(S.cases.get(d.id) || d);
+      if (k === 'adiar') { const base = d.week && weekOffset(d.week) >= 0 ? d.week : thisWeek(); d.week = addDays(base, 7); d.postponed = (d.postponed||0) + 1; d.decision = 'pending'; d.decidedAt = ''; flush(); toast('Adiado para o comitê de ' + shortDate(committeeDate(d.week)) + '.', { label: 'Desfazer', fn: () => Store.save(normalizeCase(before)) }); renderDrawer(); return; }
+      if (k === 'pending') { d.decision = 'pending'; d.decidedAt = ''; if (!d.week || weekOffset(d.week) < 0) d.week = thisWeek(); }
+      else { d.decision = k; d.decidedAt = new Date().toISOString(); }
+      flush(); renderDrawer();
+      if (k !== 'pending') toast('Decisão registrada: ' + DECISIONS[k][0] + '.', { label: 'Desfazer', fn: () => Store.save(normalizeCase(before)) });
+      return;
+    }
+    if (t.id === 'del') { D.confirmDel = true; renderDrawer(); return; }
+    if (t.id === 'del-no') { D.confirmDel = false; renderDrawer(); return; }
+    if (t.id === 'del-yes') { const snap = clone(S.cases.get(d.id) || d); clearTimeout(D.timer); D.draft = null; D.id = null; $('#drawer-root').innerHTML = ''; Store.remove(snap.id); toast('Caso apagado.', { label: 'Desfazer', fn: () => Store.save(normalizeCase(snap)) }); }
+  });
+}
+
+function toast(text, action){
+  const el = document.createElement('div'); el.className = 'toast'; el.innerHTML = `<span>${esc(text)}</span>`;
+  if (action) { const b = document.createElement('button'); b.type = 'button'; b.textContent = action.label; b.onclick = () => { action.fn(); el.remove(); }; el.appendChild(b); }
+  $('#toasts').appendChild(el); setTimeout(() => el.remove(), action ? 6000 : 2800);
+}
+
+function bind(){
+  $('#btn-new').addEventListener('click', () => openDrawer(null));
+  $$('[data-tab]').forEach(b => b.addEventListener('click', () => { UI.tab = b.dataset.tab; persistUI(); render(); }));
+  $('#cfg-day').addEventListener('change', e => { S.config.day = +e.target.value; Store.saveConfig(); toast('Comitê às ' + WEEKDAYS[S.config.day] + 's.'); });
+  const content = $('#content');
+  document.addEventListener('click', e => {
+    const mv = e.target.closest('[data-move]'); if (mv) { moveTo(mv.dataset.move, addDays(thisWeek(), +mv.dataset.to * 7)); return; }
+    const op = e.target.closest('[data-open]'); if (op && !e.target.closest('.drawer')) { openDrawer(op.dataset.open); return; }
+  });
+  content.addEventListener('click', e => {
+    const sh = e.target.closest('[data-shift]'); if (sh) { e.stopPropagation(); if (!sh.disabled) shift(sh.dataset.shift, +sh.dataset.by); return; }
+    const ag = e.target.closest('[data-agenda]'); if (ag) { showAgenda(ag.dataset.agenda); return; }
+    const c = e.target.closest('.card'); if (c) openDrawer(c.dataset.id);
+  });
+  content.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.card')) { e.preventDefault(); openDrawer(e.target.dataset.id); } });
+  content.addEventListener('dragstart', e => { const c = e.target.closest('.card'); if (!c) return; e.dataTransfer.setData('text/plain', c.dataset.id); e.dataTransfer.effectAllowed = 'move'; c.classList.add('dragging'); });
+  content.addEventListener('dragend', () => { $$('.dragging').forEach(x => x.classList.remove('dragging')); $$('.col.over').forEach(x => x.classList.remove('over')); });
+  content.addEventListener('dragover', e => { const col = e.target.closest('.col[data-week]'); if (!col || col.dataset.week === 'later') return; e.preventDefault(); $$('.col.over').forEach(x => x !== col && x.classList.remove('over')); col.classList.add('over'); });
+  content.addEventListener('drop', e => {
+    const col = e.target.closest('.col[data-week]'); if (!col || col.dataset.week === 'later') return; e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain'); const over = e.target.closest('.card');
+    moveTo(id, col.dataset.week, over && over.dataset.id !== id ? over.dataset.id : null);
+  });
+  $('#modal-root').addEventListener('click', async e => {
+    if (e.target.matches('.scrim,.modal') || e.target.closest('button[data-mclose]')) { $('#modal-root').innerHTML = ''; return; }
+    if (e.target.closest('#agenda-copy')) {
+      const ta = $('#agenda-txt');
+      try { await navigator.clipboard.writeText(ta.value); toast('Pauta copiada.'); }
+      catch (err) { ta.focus(); ta.select(); toast('Texto selecionado. Use Ctrl+C ou Copiar do celular.'); }
+    }
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { if ($('#modal-root').innerHTML) $('#modal-root').innerHTML = ''; else if (D.draft) closeDrawer(); } });
+  let last = thisWeek(); setInterval(() => { const w = thisWeek(); if (w !== last) { last = w; render(); } }, 60000);
+}
+
+bind(); bindDrawer(); render(); Store.start();
+})();
+</script>

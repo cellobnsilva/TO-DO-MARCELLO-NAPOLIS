@@ -1,5 +1,16 @@
 # Pauta do Marcello
 
+Dois painéis independentes, no mesmo repositório:
+
+| Painel | Fonte | Versão standalone |
+|---|---|---|
+| **Pauta** (afazeres) | `src/pauta.html` | `index.html` |
+| **Pauta Comitê** (programação de casos para comitê) | `src/pauta-comite.html` | `comite.html` |
+
+`scripts/build.sh` regenera as duas versões standalone.
+
+## Pauta (afazeres)
+
 Gestor de afazeres com duas categorias (**Pessoal** e **Invista**), subcategorias editáveis, data de criação automática, vencimento em notação D+n, recorrência, follow-ups ("aguardando terceiros"), checklist e placar de entregas.
 
 - **Versão principal (nuvem, privada):** artefato no claude.ai, com dados salvos no banco do artefato (só o dono lê e escreve).
@@ -33,3 +44,11 @@ Exemplo: `Cobrar minuta do acordo @escritório /recup sex 11h !2`
 `title, notes, cat (pessoal|invista), sub, priority (1-4), status (todo|doing|waiting|done), createdAt, updatedAt, due (AAAA-MM-DD), dueTime (HH:MM), doneAt, waitingOn, estimate (min), tags[], checklist[{id,text,done}], recur (none|daily|weekdays|weekly|monthly|yearly), link`.
 
 Subcategorias ficam em `config/main`. Datas calculadas no fuso America/Sao_Paulo.
+
+## Pauta Comitê
+
+Quadro com três horizontes (**essa semana**, **semana que vem**, **daqui 15 dias**), mais *A programar* e *Mais adiante*. Cada caso guarda a semana do comitê (segunda-feira da semana), então as colunas avançam sozinhas toda segunda. O dia do comitê é configurável (padrão: quinta).
+
+Por caso: objetivo (aprovação, informativo, acompanhamento, ratificação), tipo, quem apresenta, tempo de pauta, face e proposta em R$ MM (deságio calculado), taxa/prazo, credores, checklist de preparo, notas, link, decisão (aprovado, com ressalvas, diligência adicional, reprovado) e contagem de adiamentos. Casos que passam da semana sem decisão aparecem num alerta. "Copiar pauta" gera o texto da semana para e-mail ou WhatsApp.
+
+Coleções: `cases` e `config/main` (`day`: 0 a 6).
