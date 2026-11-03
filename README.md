@@ -1,15 +1,16 @@
-# Pauta do Marcello
+# Afazeres MN
 
-Dois painéis independentes, no mesmo repositório:
+Um artefato com dois painéis que compartilham o mesmo banco privado:
 
-| Painel | Fonte | Versão standalone |
+| Painel | Endereço | Função |
 |---|---|---|
-| **Pauta** (afazeres) | `src/pauta.html` | `index.html` |
-| **Pauta Comitê** (programação de casos para comitê) | `src/pauta-comite.html` | `comite.html` |
+| **Afazeres MN** | página inicial | Afazeres Pessoal e Invista |
+| **Pauta Comitê** | `#comite` | Programação dos casos para comitê |
 
-`scripts/build.sh` regenera as duas versões standalone.
+Fonte única: `src/pauta.html` (formato de artefato). `scripts/build.sh` gera `index.html`, que abre direto no navegador (dados no `localStorage`).
 
-## Pauta (afazeres)
+## Afazeres
+
 
 Gestor de afazeres com duas categorias (**Pessoal** e **Invista**), subcategorias editáveis, data de criação automática, vencimento em notação D+n, recorrência, follow-ups ("aguardando terceiros"), checklist e placar de entregas.
 
@@ -47,8 +48,10 @@ Subcategorias ficam em `config/main`. Datas calculadas no fuso America/Sao_Paulo
 
 ## Pauta Comitê
 
-Quadro com três horizontes (**essa semana**, **semana que vem**, **daqui 15 dias**), mais *A programar* e *Mais adiante*. Cada caso guarda a semana do comitê (segunda-feira da semana), então as colunas avançam sozinhas toda segunda. O dia do comitê é configurável (padrão: quinta).
+**Integração com o Afazeres:** na gaveta de qualquer tarefa, *Levar ao comitê* cria o caso já vinculado (a tarefa ganha o selo "Comitê ter 10/11"); na Pauta Comitê, *Do Afazeres* lista as tarefas abertas para pautar em lote; o caso tem *Abrir tarefa* de volta.
+
+Quadro com três horizontes (**essa semana**, **semana que vem**, **daqui 15 dias**), mais *A programar* e *Mais adiante*. Cada caso guarda a semana do comitê (segunda-feira da semana), então as colunas avançam sozinhas toda segunda. O dia padrão do comitê é configurável (terça), e cada semana pode ter um dia diferente pelo seletor no cabeçalho da coluna.
 
 Por caso: objetivo (aprovação, informativo, acompanhamento, ratificação), tipo, quem apresenta, tempo de pauta, face e proposta em R$ MM (deságio calculado), taxa/prazo, credores, checklist de preparo, notas, link, decisão (aprovado, com ressalvas, diligência adicional, reprovado) e contagem de adiamentos. Casos que passam da semana sem decisão aparecem num alerta. "Copiar pauta" gera o texto da semana para e-mail ou WhatsApp.
 
-Coleções: `cases` e `config/main` (`day`: 0 a 6).
+Coleções: `cases` (com `taskId` quando vem do Afazeres) e `config/comite` (`day`: 1 a 5; `overrides`: {segunda-feira da semana: dia}).
