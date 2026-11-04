@@ -185,10 +185,28 @@ textarea.inp{min-height:90px;resize:vertical}
 .seg.full{display:flex} .seg.full button{flex:1;justify-content:center}
 .seg button.pessoal[aria-pressed="true"]{color:var(--pessoal)} .seg button.invista[aria-pressed="true"]{color:var(--invista)}
 .chk-list{display:flex;flex-direction:column;gap:4px}
-.chk-item{display:flex;align-items:center;gap:8px}
+.chk-item{display:flex;align-items:center;gap:8px;border-radius:4px;background:var(--surface)}
+.chk-item.dragging{background:var(--surface-2);box-shadow:0 2px 10px rgba(10,21,40,.15);position:relative;z-index:2}
+.grip{width:22px;height:28px;display:grid;place-items:center;color:var(--faint);cursor:grab;touch-action:none;background:none;border:0;padding:0;flex:none;border-radius:4px}
+.grip:hover,.grip:focus-visible{color:var(--navy);background:var(--surface-2)}
+.chk-item.dragging .grip{cursor:grabbing;color:var(--navy)}
+.grip svg{width:14px;height:14px}
+.pchip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:4px;border:1px solid var(--line);color:var(--navy);background:var(--surface)}
+.people-pick{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.people-pick button{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:4px;padding:5px 10px;font-weight:500;font-size:13px}
+.people-pick button[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:var(--bg)}
+.people-pick input{border:1px dashed var(--line);background:none;border-radius:4px;padding:5px 8px;font-size:13px;width:130px;outline:none}
+.people-pick input:focus{border-color:var(--focus)}
+.peopletabs{display:none;gap:6px;overflow-x:auto;scrollbar-width:none;margin-inline:-4px;padding:2px 4px}
+.peopletabs::-webkit-scrollbar{display:none}
+.peopletabs button{flex:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--navy);border-radius:4px;padding:5px 10px;font-weight:600;font-size:12.5px;white-space:nowrap}
+.peopletabs button .num{font-size:11px;color:var(--faint);font-weight:500}
+.peopletabs button[aria-current="true"]{background:var(--navy);border-color:var(--navy);color:var(--bg)}
+.peopletabs button[aria-current="true"] .num{color:var(--bg)}
+.peopletabs .lbl2{flex:none;align-self:center;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);padding-right:2px}
 .chk-item input[type=text]{flex:1;border:0;background:none;outline:none;padding:4px 0;min-width:0}
 .chk-item input[type=text].done{text-decoration:line-through;color:var(--faint)}
-.chk-item button:not(.check){background:none;border:0;color:var(--faint);padding:2px;display:flex}
+.chk-item button:not(.check):not(.grip){background:none;border:0;color:var(--faint);padding:2px;display:flex}
 .audit{font-size:12px;color:var(--muted);display:grid;grid-template-columns:auto 1fr;gap:3px 12px;background:var(--bg);border-radius:4px;padding:10px 12px}
 .audit .num{color:var(--ink)}
 .confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--late)}
@@ -224,6 +242,7 @@ textarea.inp{min-height:90px;resize:vertical}
   .side.open{transform:none;box-shadow:var(--shadow)}
   .mobile-only{display:inline-flex}
   .viewtabs{display:flex}
+  .peopletabs{display:flex}
   .main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
   .board-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
   .board-stats .stat:last-child{grid-column:1/-1}
@@ -382,9 +401,10 @@ textarea.inp{min-height:90px;resize:vertical}
     <div class="brand"><svg viewBox="0 0 100 100" role="img" aria-label="MN"><circle cx="50" cy="50" r="44" fill="none" stroke="#0A1528" stroke-width="3"/><g fill="#0A1528"><path transform="translate(23.636 53.000) scale(0.02821 -0.02821)" d="M63 0V709H192L464 298H403L674 709H803V0H626V413L654 405L491 160H375L213 405L241 413V0Z"/><path transform="translate(49.264 53.000) scale(0.02821 -0.02821)" d="M63 0V709H188L242 564V0ZM552 0 138 526 188 709 603 183ZM552 0 506 149V709H685V0Z"/></g><path d="M10.12 68.60 C42 77 82 73 88.64 15.21" fill="none" stroke="#00AEE0" stroke-width="4" stroke-linecap="round"/></svg><div><b>Afazeres MN</b><span>Pessoal &amp; Invista</span></div></div>
     <div><p class="navlabel">Visões</p><nav class="nav" id="nav-views"></nav></div>
     <div><p class="navlabel">Painéis</p><nav class="nav"><a href="#comite"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Pauta Comitê<span class="cnt" id="kcount"></span></a></nav></div>
+    <div><p class="navlabel">Pessoas e áreas</p><nav class="nav" id="nav-people"></nav></div>
     <div><p class="navlabel">Categorias</p><nav class="nav" id="nav-cats"></nav></div>
     <div class="side-foot">
-      <button id="btn-settings" type="button"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Subcategorias e backup</button>
+      <button id="btn-settings" type="button"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Configurações</button>
       <div class="storage" id="storage"><i></i><span>Conectando…</span></div>
     </div>
   </aside>
@@ -404,6 +424,7 @@ textarea.inp{min-height:90px;resize:vertical}
     </div>
 
     <nav class="viewtabs" id="viewtabs" aria-label="Visões"></nav>
+    <nav class="peopletabs" id="peopletabs" aria-label="Pessoas e áreas"></nav>
 
     <form class="quick" id="quick" autocomplete="off">
       <div class="quick-row">
@@ -466,6 +487,7 @@ const STATUS = { todo: 'A fazer', doing: 'Em andamento', waiting: 'Aguardando te
 const PRIO = { 1: 'P1 crítica', 2: 'P2 alta', 3: 'P3 normal', 4: 'P4 baixa' };
 const RECUR = { none: 'Não repete', daily: 'Todo dia', weekdays: 'Dias úteis (seg a sex)', weekly: 'Toda semana', monthly: 'Todo mês', yearly: 'Todo ano' };
 const ESTIM = { '': 'Sem estimativa', 15: '15 min', 30: '30 min', 60: '1 h', 120: '2 h', 240: '4 h', 480: '1 dia' };
+const DEFAULT_PEOPLE = [['pedro-felipe','Pedro Felipe'],['eric','Eric'],['lucas','Lucas'],['buy-side','Buy Side'],['juridico','Jurídico'],['investimentos','Investimentos'],['ppa','PPA']];
 const DEFAULT_SUBS = {
   pessoal: [['saude','Saúde e treino'],['familia','Família'],['financas','Finanças e investimentos'],['casa','Casa e burocracia'],['carreira','Carreira e estudo']],
   invista: [['originacao','Originação'],['diligencia','Due diligence'],['recuperacao','Cobrança e recuperação'],['juridico','Jurídico'],['comite','Comitê e aprovações'],['investidores','Investidores e relatórios'],['gestao','Gestão e equipe']]
@@ -524,20 +546,22 @@ const clone = o => JSON.parse(JSON.stringify(o));
 /* ---------- estado ---------- */
 const S = { tasks: new Map(), config: defaultConfig(), mode: 'init', loaded: false, banner: null };
 const savedUI = lsGet(UI_KEY) || {};
-const UI = { view: savedUI.view || 'abertas', cat: savedUI.cat || null, sub: savedUI.sub || null, layout: savedUI.layout || 'lista', q: '', quickCat: savedUI.quickCat || 'invista' };
-const persistUI = () => lsSet(UI_KEY, { view: UI.view, cat: UI.cat, sub: UI.sub, layout: UI.layout, quickCat: UI.quickCat });
+const UI = { view: savedUI.view || 'abertas', cat: savedUI.cat || null, sub: savedUI.sub || null, person: savedUI.person || null, layout: savedUI.layout || 'lista', q: '', quickCat: savedUI.quickCat || 'invista' };
+const persistUI = () => lsSet(UI_KEY, { view: UI.view, cat: UI.cat, sub: UI.sub, person: UI.person, layout: UI.layout, quickCat: UI.quickCat });
 
 function defaultConfig(){
   const subs = {};
   for (const c of Object.keys(DEFAULT_SUBS)) subs[c] = DEFAULT_SUBS[c].map(([id,name]) => ({id,name}));
-  return { subs };
+  return { subs, people: DEFAULT_PEOPLE.map(([id,name]) => ({id,name})) };
 }
 function normalizeConfig(c){
   const d = defaultConfig();
   if (!c || !c.subs) return d;
   for (const k of Object.keys(CATS)) if (Array.isArray(c.subs[k])) d.subs[k] = c.subs[k].filter(s => s && s.id && s.name).map(s => ({id:String(s.id), name:String(s.name)}));
+  if (Array.isArray(c.people)) d.people = c.people.filter(x => x && x.id && x.name).map(x => ({id:String(x.id), name:String(x.name)}));
   return d;
 }
+const personName = id => S.config.people.find(x => x.id === id)?.name || '';
 function normalizeTask(t, id){
   return {
     id: id || t.id || uid(),
@@ -558,6 +582,7 @@ function normalizeTask(t, id){
     checklist: Array.isArray(t.checklist) ? t.checklist.map(c => ({id:c.id||uid('c'), text:String(c.text||''), done:!!c.done})) : [],
     recur: RECUR[t.recur] ? t.recur : 'none',
     link: String(t.link || ''),
+    people: Array.isArray(t.people) ? [...new Set(t.people.map(String).filter(Boolean))] : [],
     example: !!t.example
   };
 }
@@ -649,14 +674,14 @@ function findSub(q, cat){
   return null;
 }
 function parseQuick(text){
-  const out = { cat: null, sub: '', priority: 0, due: '', dueTime: '', waitingOn: '', recur: '', tags: [], subMiss: '' };
+  const out = { people: [], cat: null, sub: '', priority: 0, due: '', dueTime: '', waitingOn: '', recur: '', tags: [], subMiss: '' };
   const today = todayISO(); const keep = []; let subQ = '';
   for (const tk of text.trim().split(/\s+/).filter(Boolean)) {
     const n = norm(tk); let m;
     if ((m = n.match(/^#(p|pessoal|i|inv|invista)(?:\/(.+))?$/))) { out.cat = m[1][0] === 'p' ? 'pessoal' : 'invista'; if (m[2]) subQ = m[2]; continue; }
     if ((m = n.match(/^\/(.+)$/))) { subQ = m[1]; continue; }
     if ((m = n.match(/^!([1-4])$/))) { out.priority = +m[1]; continue; }
-    if ((m = n.match(/^@(.+)$/))) { out.waitingOn = tk.slice(1).replace(/_/g,' '); continue; }
+    if ((m = n.match(/^@(.+)$/))) { const q = m[1].replace(/[-_]/g,' '); const pp = S.config.people.find(x => norm(x.name).startsWith(q) || norm(x.id).replace(/-/g,' ').startsWith(q)); if (pp) { if (!out.people.includes(pp.id)) out.people.push(pp.id); } else out.waitingOn = tk.slice(1).replace(/_/g,' '); continue; }
     if ((m = n.match(/^\*(.+)$/)) && RECUR_WORDS[m[1]]) { out.recur = RECUR_WORDS[m[1]]; continue; }
     if (n === 'hoje') { out.due = today; continue; }
     if (n === 'amanha') { out.due = addDays(today,1); continue; }
@@ -684,6 +709,7 @@ function quickHint(){
   if (p.subMiss) parts.push(`<span class="chip late">Subcategoria "${esc(p.subMiss)}" não existe</span>`);
   if (p.priority) parts.push(`<span class="chip">P${p.priority}</span>`);
   if (p.due) { const d = diffDays(p.due, todayISO()); parts.push(`<span class="chip ${d<0?'late':d===0?'today':''}">${esc(shortDate(p.due))} · <span class="num">${dLabel(d)}</span></span>`); }
+  for (const id of p.people) parts.push(`<span class="pchip">${esc(personName(id))}</span>`);
   if (p.waitingOn) parts.push(`<span class="chip">${ICON.wait}Aguardando ${esc(p.waitingOn)}</span>`);
   if (p.recur) parts.push(`<span class="chip">${ICON.repeat}${esc(RECUR[p.recur])}</span>`);
   box.innerHTML = parts.join('');
@@ -695,7 +721,7 @@ function addQuick(e){
   const cat = p.cat || UI.quickCat;
   const t = normalizeTask({
     title: p.title, cat, sub: p.sub || (UI.cat === cat ? UI.sub || '' : ''), priority: p.priority || 3,
-    due: p.due, waitingOn: p.waitingOn, status: p.waitingOn ? 'waiting' : 'todo',
+    due: p.due, people: p.people.length ? p.people : (UI.person ? [UI.person] : []), waitingOn: p.waitingOn, status: p.waitingOn ? 'waiting' : 'todo',
     recur: p.recur || 'none', createdAt: new Date().toISOString()
   });
   Store.saveTask(t);
@@ -706,6 +732,7 @@ function addQuick(e){
 
 /* ---------- filtros e agrupamento ---------- */
 function inCatScope(t){
+  if (UI.person && !t.people.includes(UI.person)) return false;
   if (UI.cat && t.cat !== UI.cat) return false;
   if (UI.sub === '__none') return !t.sub || !subName(t.cat, t.sub);
   if (UI.sub && t.sub !== UI.sub) return false;
@@ -715,7 +742,7 @@ function inScope(t){
   if (!inCatScope(t)) return false;
   if (UI.q) {
     const q = norm(UI.q);
-    const hay = norm([t.title, t.notes, t.waitingOn, t.tags.join(' '), subName(t.cat,t.sub), t.checklist.map(c=>c.text).join(' ')].join(' '));
+    const hay = norm([t.title, t.notes, t.waitingOn, t.people.map(personName).join(' '), subName(t.cat,t.sub), t.checklist.map(c=>c.text).join(' ')].join(' '));
     if (!q.split(/\s+/).every(w => hay.includes(w))) return false;
   }
   return true;
@@ -749,7 +776,7 @@ function render(){
   st.className = 'storage' + (S.mode === 'db' ? ' db' : '');
   st.querySelector('span').textContent = S.mode === 'db' ? (S.loaded ? 'Salvo na nuvem (privado)' : 'Carregando da nuvem…') : S.mode === 'local' ? 'Salvo só neste navegador' : 'Conectando…';
   const v = VIEWS.find(v => v[0] === UI.view);
-  $('#view-title').textContent = v ? v[1] : 'Pauta';
+  $('#view-title').textContent = UI.person ? 'Com ' + (personName(UI.person) || '?') : (v ? v[1] : 'Afazeres');
 }
 function renderNav(){
   const today = todayISO(); const all = [...S.tasks.values()];
@@ -777,6 +804,10 @@ function renderNav(){
     }
   }
   $('#nav-cats').innerHTML = html;
+  const openAll = all.filter(isOpen);
+  const ppl = S.config.people.map(x => [x, openAll.filter(t => t.people.includes(x.id)).length]);
+  $('#nav-people').innerHTML = ppl.map(([x,n]) => `<button type="button" data-person="${esc(x.id)}" aria-current="${UI.person===x.id}">${esc(x.name)}<span class="cnt">${n||''}</span></button>`).join('') || '<span class="help" style="padding-left:8px">Cadastre em Subcategorias e pessoas.</span>';
+  $('#peopletabs').innerHTML = ppl.length ? '<span class="lbl2">Com</span>' + ppl.map(([x,n]) => `<button type="button" data-person="${esc(x.id)}" aria-current="${UI.person===x.id}">${esc(x.name)}${n ? `<span class="num">${n}</span>` : ''}</button>`).join('') : '';
 }
 function renderStats(){
   const today = todayISO(); const all = [...S.tasks.values()].filter(inCatScope);
@@ -803,6 +834,7 @@ function renderStats(){
 function renderFilterline(){
   const parts = [];
   if (UI.cat) parts.push(`<span class="chip ${UI.cat}"><i class="dot ${UI.cat}"></i>${CATS[UI.cat]}${UI.sub ? ' · ' + esc(UI.sub === '__none' ? 'Sem subcategoria' : subName(UI.cat, UI.sub)) : ''}<button type="button" data-clear="cat" aria-label="Limpar filtro de categoria">${ICON.x}</button></span>`);
+  if (UI.person) parts.push(`<span class="pchip">Com ${esc(personName(UI.person))}<button type="button" data-clear="person" aria-label="Limpar filtro de pessoa" style="border:0;background:none;padding:0;margin-left:2px;color:inherit;display:flex">${ICON.x}</button></span>`);
   if (UI.q) parts.push(`<span class="chip">Busca: ${esc(UI.q)}<button type="button" data-clear="q" aria-label="Limpar busca">${ICON.x}</button></span>`);
   const v = VIEWS.find(v => v[0] === UI.view);
   $('#filterline').innerHTML = parts.join('');
@@ -822,6 +854,7 @@ function metaHTML(t, opts={}){
   if (t.status === 'waiting' || t.waitingOn) m.push(`<span>${ICON.wait}${t.waitingOn ? 'Aguardando ' + esc(t.waitingOn) : 'Aguardando terceiros'}</span>`);
   if (t.checklist.length) m.push(`<span>${ICON.list}<span class="num">${t.checklist.filter(c=>c.done).length}/${t.checklist.length}</span></span>`);
   if (t.recur !== 'none') m.push(`<span title="${esc(RECUR[t.recur])}">${ICON.repeat}</span>`);
+  for (const id of t.people) if (id !== UI.person && personName(id)) m.push(`<span class="pchip">${esc(personName(id))}</span>`);
   const kc = window.MN && MN.comite ? MN.comite.caseForTask(t.id) : null;
   if (kc) m.unshift(`<span class="chip kc" title="Na Pauta Comitê">Comitê ${esc(kc.week ? MN.comite.label(kc).replace('comitê de ','') : 'a programar')}</span>`);
   if (t.example) m.push(`<span class="tag-ex">Exemplo</span>`);
@@ -1008,9 +1041,10 @@ function renderDrawer(){
         <div class="field"><label for="f-recur">Repetição</label><select id="f-recur" class="inp">${Object.entries(RECUR).map(([k,v]) => `<option value="${k}" ${d.recur===k?'selected':''}>${v}</option>`).join('')}</select></div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">${[['Hoje',0],['Amanhã',1],['+3 dias',3],['+1 semana',7],['Sem data',null]].map(([l,n]) => `<button type="button" class="chip" style="border:0" data-quickdue="${n===null?'':n}">${l}</button>`).join('')}</div>
+      <div class="field"><span class="lbl">Com quem</span><div class="people-pick" role="group" aria-label="Pessoas e áreas">${S.config.people.map(x => `<button type="button" data-setperson="${esc(x.id)}" aria-pressed="${d.people.includes(x.id)}">${esc(x.name)}</button>`).join('')}<label class="sr" for="f-newperson">Nova pessoa ou área</label><input id="f-newperson" placeholder="+ Nova e Enter"></div></div>
       <div class="field"><label for="f-wait">Aguardando quem</label><input id="f-wait" class="inp" placeholder="Ex.: escritório, contraparte, contador" value="${esc(d.waitingOn)}"></div>
       <div class="field"><span class="lbl">Checklist</span>
-        <div class="chk-list" id="chk-list">${d.checklist.map(c => `<div class="chk-item" data-cid="${esc(c.id)}"><button type="button" class="check ${c.done?'on':''}" data-chk="${esc(c.id)}" aria-label="Marcar item">${ICON.check}</button><input type="text" value="${esc(c.text)}" class="${c.done?'done':''}" data-chktext="${esc(c.id)}" aria-label="Item"><button type="button" data-chkdel="${esc(c.id)}" aria-label="Remover item">${ICON.x}</button></div>`).join('')}</div>
+        <div class="chk-list" id="chk-list">${d.checklist.map(c => `<div class="chk-item" data-cid="${esc(c.id)}"><button type="button" class="grip" data-grip="${esc(c.id)}" aria-label="Arrastar para reordenar (ou setas ↑ ↓)"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.2"/><circle cx="15" cy="6" r="1.2"/><circle cx="9" cy="12" r="1.2"/><circle cx="15" cy="12" r="1.2"/><circle cx="9" cy="18" r="1.2"/><circle cx="15" cy="18" r="1.2"/></svg></button><button type="button" class="check ${c.done?'on':''}" data-chk="${esc(c.id)}" aria-label="Marcar item">${ICON.check}</button><input type="text" value="${esc(c.text)}" class="${c.done?'done':''}" data-chktext="${esc(c.id)}" aria-label="Item"><button type="button" data-chkdel="${esc(c.id)}" aria-label="Remover item">${ICON.x}</button></div>`).join('')}</div>
         <input id="f-chk-new" class="inp" placeholder="Adicionar etapa e Enter"></div>
       <div class="field"><label for="f-notes">Notas</label><textarea id="f-notes" class="inp" placeholder="Contexto, próximos passos, números da negociação">${esc(d.notes)}</textarea></div>
       ${!Drawer.isNew ? `<div class="field"><span class="lbl">Pauta Comitê</span><div id="d-comite">${comiteBlock(d)}</div></div>` : ''}
@@ -1022,6 +1056,30 @@ function renderDrawer(){
 }
 function bindDrawer(){
   const root = $('#drawer-root');
+  root.addEventListener('pointerdown', e => {
+    const g = e.target.closest('[data-grip]'); if (!g || !Drawer.draft) return;
+    if (e.button !== undefined && e.button !== 0) return;
+    e.preventDefault();
+    const list = $('#chk-list'); const item = g.closest('.chk-item'); const body = root.querySelector('.body');
+    let moved = false; item.classList.add('dragging');
+    try { g.setPointerCapture(e.pointerId); } catch (err) {}
+    const onMove = ev => {
+      const y = ev.clientY; const prev = item.previousElementSibling, next = item.nextElementSibling;
+      if (prev) { const r = prev.getBoundingClientRect(); if (y < r.top + r.height / 2) { list.insertBefore(item, prev); moved = true; } }
+      if (next) { const r = next.getBoundingClientRect(); if (y > r.top + r.height / 2) { list.insertBefore(next, item); moved = true; } }
+      if (body) { const br = body.getBoundingClientRect(); if (y < br.top + 40) body.scrollTop -= 10; else if (y > br.bottom - 40) body.scrollTop += 10; }
+    };
+    const onUp = () => {
+      g.removeEventListener('pointermove', onMove); g.removeEventListener('pointerup', onUp); g.removeEventListener('pointercancel', onUp);
+      item.classList.remove('dragging');
+      if (!moved || !Drawer.draft) return;
+      const order = $$('#chk-list .chk-item').map(x => x.dataset.cid);
+      const byId = new Map(Drawer.draft.checklist.map(c => [c.id, c]));
+      Drawer.draft.checklist = order.map(id => byId.get(id)).filter(Boolean);
+      flushDrawer();
+    };
+    g.addEventListener('pointermove', onMove); g.addEventListener('pointerup', onUp); g.addEventListener('pointercancel', onUp);
+  });
   root.addEventListener('input', e => {
     const d = Drawer.draft; if (!d) return; const el = e.target;
     if (el.id === 'f-title') d.title = el.value.replace(/\n/g,' ');
@@ -1047,6 +1105,8 @@ function bindDrawer(){
   root.addEventListener('keydown', e => {
     const d = Drawer.draft; if (!d) return;
     if (e.target.id === 'f-title' && e.key === 'Enter') { e.preventDefault(); flushDrawer(); }
+    if (e.target.id === 'f-newperson' && e.key === 'Enter') { e.preventDefault(); const v = e.target.value.trim(); if (!v) return; const id = addPerson(v); if (!d.people.includes(id)) d.people.push(id); flushDrawer(); renderDrawer(); $('#f-newperson') && $('#f-newperson').focus(); return; }
+    if (e.target.dataset.grip && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { e.preventDefault(); const id = e.target.dataset.grip; const i = d.checklist.findIndex(c => c.id === id); const j = i + (e.key === 'ArrowUp' ? -1 : 1); if (i < 0 || j < 0 || j >= d.checklist.length) return; const [it] = d.checklist.splice(i,1); d.checklist.splice(j,0,it); flushDrawer(); renderDrawer(); const g = $(`[data-grip="${id}"]`); g && g.focus(); return; }
     if (e.target.id === 'f-chk-new' && e.key === 'Enter') { e.preventDefault(); const v = e.target.value.trim(); if (!v) return; d.checklist.push({ id: uid('c'), text: v, done: false }); flushDrawer(); renderDrawer(); $('#f-chk-new').focus(); }
     if (e.target.id === 'f-newsub' && e.key === 'Enter') { e.preventDefault(); const v = e.target.value.trim(); if (!v) return; const id = addSub(d.cat, v); d.sub = id; flushDrawer(); renderDrawer(); }
   });
@@ -1059,6 +1119,7 @@ function bindDrawer(){
     if (t.dataset.quickdue !== undefined) { d.due = t.dataset.quickdue === '' ? '' : addDays(todayISO(), +t.dataset.quickdue); if (!d.due) d.dueTime = ''; flushDrawer(); renderDrawer(); return; }
     if (t.dataset.chk) { const c = d.checklist.find(c => c.id === t.dataset.chk); if (c) c.done = !c.done; flushDrawer(); renderDrawer(); return; }
     if (t.dataset.chkdel) { d.checklist = d.checklist.filter(c => c.id !== t.dataset.chkdel); flushDrawer(); renderDrawer(); return; }
+    if (t.dataset.setperson) { const id = t.dataset.setperson; d.people = d.people.includes(id) ? d.people.filter(x => x !== id) : [...d.people, id]; flushDrawer(); t.setAttribute('aria-pressed', String(d.people.includes(id))); return; }
     if (t.id === 'd-tocomite') { flushDrawer(); const task = S.tasks.get(d.id); if (!task || !MN.comite) return; const c = MN.comite.addFromTask(task, $('#f-kweek').value); $('#d-comite').innerHTML = comiteBlock(d); toast('Pautado: ' + MN.comite.label(c) + '.', { label: 'Abrir', fn: () => MN.comite.open(c.id) }); return; }
     if (t.dataset.opencase) { const id = t.dataset.opencase; closeDrawer(); MN.comite.open(id); return; }
     if (t.id === 'd-done') { flushDrawer(); toggleDone(d.id); return; }
@@ -1075,16 +1136,25 @@ function addSub(cat, name){
   while (ids.has(id)) id = id + '-2';
   S.config.subs[cat].push({ id, name }); Store.saveConfig(); return id;
 }
+function addPerson(name){
+  const ex = S.config.people.find(x => norm(x.name) === norm(name)); if (ex) return ex.id;
+  let id = slug(name); const ids = new Set(S.config.people.map(x => x.id)); while (ids.has(id)) id = id + '-2';
+  S.config.people.push({ id, name }); Store.saveConfig(); return id;
+}
 const Modal = { confirm: null };
 function openSettings(){ Modal.confirm = null; renderSettings(); }
 function renderSettings(){
   const all = [...S.tasks.values()];
-  $('#modal-root').innerHTML = `<div class="scrim" data-mclose></div><div class="modal" data-mclose><div class="box" role="dialog" aria-modal="true" aria-label="Subcategorias e backup">
-    <div style="display:flex;align-items:center;gap:8px"><h2 style="flex:1">Subcategorias e backup</h2><button class="btn ghost" type="button" data-mclose aria-label="Fechar">${ICON.x}</button></div>
+  $('#modal-root').innerHTML = `<div class="scrim" data-mclose></div><div class="modal" data-mclose><div class="box" role="dialog" aria-modal="true" aria-label="Subcategorias, pessoas e backup">
+    <div style="display:flex;align-items:center;gap:8px"><h2 style="flex:1">Subcategorias, pessoas e backup</h2><button class="btn ghost" type="button" data-mclose aria-label="Fechar">${ICON.x}</button></div>
     <div class="cols2">${Object.keys(CATS).map(c => `<div class="subedit"><h3><i class="dot ${c}"></i>${CATS[c]}</h3>
       ${S.config.subs[c].map(s => { const n = all.filter(t => t.cat===c && t.sub===s.id).length; const conf = Modal.confirm === c+'|'+s.id; return `<div class="r"><input class="inp" value="${esc(s.name)}" data-rename="${c}|${esc(s.id)}" aria-label="Nome da subcategoria"><small title="Tarefas">${n}</small>${conf ? `<button class="btn danger" type="button" data-delsub-yes="${c}|${esc(s.id)}">Apagar</button><button class="btn" type="button" data-delsub-no>Não</button>` : `<button class="btn ghost" type="button" data-delsub="${c}|${esc(s.id)}" aria-label="Apagar ${esc(s.name)}">${ICON.trash}</button>`}</div>`; }).join('')}
       <input class="inp" placeholder="+ Nova subcategoria e Enter" data-addsub="${c}" aria-label="Nova subcategoria em ${CATS[c]}"></div>`).join('')}</div>
     <p class="help">Apagar uma subcategoria não apaga tarefas: elas ficam em "Sem subcategoria".</p>
+    <div class="subedit"><h3>Pessoas e áreas</h3>
+      ${S.config.people.map(x => { const n = all.filter(t => t.people.includes(x.id)).length; const conf = Modal.confirm === 'person|'+x.id; return `<div class="r"><input class="inp" value="${esc(x.name)}" data-renperson="${esc(x.id)}" aria-label="Nome"><small title="Tarefas">${n}</small>${conf ? `<button class="btn danger" type="button" data-delperson-yes="${esc(x.id)}">Apagar</button><button class="btn" type="button" data-delsub-no>Não</button>` : `<button class="btn ghost" type="button" data-delperson="${esc(x.id)}" aria-label="Apagar ${esc(x.name)}">${ICON.trash}</button>`}</div>`; }).join('')}
+      <input class="inp" placeholder="+ Nova pessoa ou área e Enter" data-addperson="1" aria-label="Nova pessoa ou área">
+      <p class="help">Apagar uma pessoa só tira a marcação das tarefas.</p></div>
     <div><h3>Backup</h3><div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn" type="button" id="exp-json">Exportar JSON</button>
       <button class="btn" type="button" id="exp-csv">Exportar CSV (Excel)</button>
@@ -1099,6 +1169,14 @@ function bindSettings(){
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.delsub) { Modal.confirm = b.dataset.delsub; renderSettings(); return; }
     if (b.hasAttribute('data-delsub-no')) { Modal.confirm = null; renderSettings(); return; }
+    if (b.dataset.delperson) { Modal.confirm = 'person|' + b.dataset.delperson; renderSettings(); return; }
+    if (b.dataset.delpersonYes) {
+      const id = b.dataset.delpersonYes;
+      S.config.people = S.config.people.filter(x => x.id !== id); Store.saveConfig();
+      for (const t of [...S.tasks.values()]) if (t.people.includes(id)) { t.people = t.people.filter(x => x !== id); Store.saveTask(t); }
+      if (UI.person === id) { UI.person = null; persistUI(); }
+      Modal.confirm = null; renderSettings(); render(); return;
+    }
     if (b.dataset.delsubYes) {
       const [c,id] = b.dataset.delsubYes.split('|');
       S.config.subs[c] = S.config.subs[c].filter(s => s.id !== id); Store.saveConfig();
@@ -1112,18 +1190,20 @@ function bindSettings(){
   });
   root.addEventListener('change', e => {
     const el = e.target;
+    if (el.dataset.renperson) { const x = S.config.people.find(x => x.id === el.dataset.renperson); const v = el.value.trim(); if (x && v && v !== x.name) { x.name = v; Store.saveConfig(); toast('Nome atualizado.'); } }
     if (el.dataset.rename) { const [c,id] = el.dataset.rename.split('|'); const s = S.config.subs[c].find(s => s.id === id); const v = el.value.trim(); if (s && v && v !== s.name) { s.name = v; Store.saveConfig(); toast('Subcategoria renomeada.'); } }
   });
   root.addEventListener('keydown', e => {
     const el = e.target;
     if (el.dataset.addsub && e.key === 'Enter') { e.preventDefault(); const v = el.value.trim(); if (!v) return; addSub(el.dataset.addsub, v); renderSettings(); const n = $(`[data-addsub="${el.dataset.addsub}"]`); n && n.focus(); }
-    if (el.dataset.rename && e.key === 'Enter') el.blur();
+    if (el.dataset.addperson && e.key === 'Enter') { e.preventDefault(); const v = el.value.trim(); if (!v) return; addPerson(v); renderSettings(); const n = $('[data-addperson]'); n && n.focus(); }
+    if ((el.dataset.rename || el.dataset.renperson) && e.key === 'Enter') el.blur();
   });
 }
 function toCSV(){
-  const cols = ['titulo','categoria','subcategoria','status','prioridade','criada_em','vencimento','concluida_em','aguardando','repeticao','checklist','notas'];
+  const cols = ['titulo','categoria','subcategoria','pessoas','status','prioridade','criada_em','vencimento','concluida_em','aguardando','repeticao','checklist','notas'];
   const q = v => { const s = String(v ?? ''); return /[;"\n\r]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
-  const rows = [...S.tasks.values()].sort(cmpTask).map(t => [t.title, CATS[t.cat], subName(t.cat,t.sub), STATUS[t.status], 'P'+t.priority, stamp(t.createdAt), t.due ? t.due.split('-').reverse().join('/') : '', stamp(t.doneAt), t.waitingOn, RECUR[t.recur], t.checklist.map(c => (c.done?'[x] ':'[ ] ') + c.text).join(' | '), t.notes].map(q).join(';'));
+  const rows = [...S.tasks.values()].sort(cmpTask).map(t => [t.title, CATS[t.cat], subName(t.cat,t.sub), t.people.map(personName).join(', '), STATUS[t.status], 'P'+t.priority, stamp(t.createdAt), t.due ? t.due.split('-').reverse().join('/') : '', stamp(t.doneAt), t.waitingOn, RECUR[t.recur], t.checklist.map(c => (c.done?'[x] ':'[ ] ') + c.text).join(' | '), t.notes].map(q).join(';'));
   return '﻿' + cols.join(';') + '\r\n' + rows.join('\r\n');
 }
 async function exportFile(filename, data){
@@ -1143,7 +1223,7 @@ function importFile(file){
   r.onload = async () => {
     let obj; try { obj = JSON.parse(r.result); } catch (e) { toast('Arquivo inválido: não é um JSON.'); return; }
     if (!obj || !Array.isArray(obj.tasks)) { toast('Arquivo inválido: falta a lista "tasks".'); return; }
-    if (obj.config) { const c = normalizeConfig(obj.config); for (const k of Object.keys(CATS)) { const ids = new Set(S.config.subs[k].map(s=>s.id)); for (const s of c.subs[k]) if (!ids.has(s.id)) S.config.subs[k].push(s); } Store.saveConfig(); }
+    if (obj.config) { const c = normalizeConfig(obj.config); for (const k of Object.keys(CATS)) { const ids = new Set(S.config.subs[k].map(s=>s.id)); for (const s of c.subs[k]) if (!ids.has(s.id)) S.config.subs[k].push(s); } { const pids = new Set(S.config.people.map(x=>x.id)); for (const x of c.people) if (!pids.has(x.id)) S.config.people.push(x); } Store.saveConfig(); }
     let n = 0; for (const t of obj.tasks) { Store.saveTask(normalizeTask(t)); n++; if (S.mode === 'db' && n % 20 === 0) await new Promise(r => setTimeout(r, 300)); }
     toast(n + ' tarefas importadas.'); renderSettings();
   };
@@ -1189,12 +1269,20 @@ function bind(){
   const pickView = e => { const b = e.target.closest('button[data-view]'); if (!b) return; UI.view = b.dataset.view; persistUI(); $('#side').classList.remove('open'); render(); };
   $('#nav-views').addEventListener('click', pickView);
   $('#viewtabs').addEventListener('click', pickView);
+  const pickPerson = e => {
+    const b = e.target.closest('button[data-person]'); if (!b) return;
+    const id = b.dataset.person;
+    if (UI.person === id) UI.person = null; else { UI.person = id; UI.view = 'abertas'; UI.cat = null; UI.sub = null; }
+    persistUI(); $('#side').classList.remove('open'); render(); window.scrollTo(0,0);
+  };
+  $('#nav-people').addEventListener('click', pickPerson);
+  $('#peopletabs').addEventListener('click', pickPerson);
   $('#nav-cats').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     UI.cat = b.dataset.cat || null; UI.sub = b.dataset.sub || null; if (UI.cat) UI.quickCat = UI.cat;
     persistUI(); $('#side').classList.remove('open'); render(); quickHint();
   });
-  $('#filterline').addEventListener('click', e => { const b = e.target.closest('button[data-clear]'); if (!b) return; if (b.dataset.clear === 'cat') { UI.cat = null; UI.sub = null; persistUI(); } else { UI.q = ''; $('#q').value = ''; } render(); });
+  $('#filterline').addEventListener('click', e => { const b = e.target.closest('button[data-clear]'); if (!b) return; if (b.dataset.clear === 'cat') { UI.cat = null; UI.sub = null; persistUI(); } else if (b.dataset.clear === 'person') { UI.person = null; persistUI(); } else { UI.q = ''; $('#q').value = ''; } render(); });
   $('#banner').addEventListener('click', e => {
     if (e.target.id === 'btn-clear-ex') { const ex = [...S.tasks.values()].filter(t => t.example); ex.forEach(t => Store.deleteTask(t.id)); toast(ex.length + ' exemplos apagados.'); }
   });

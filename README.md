@@ -44,7 +44,7 @@ Exemplo: `Cobrar minuta do acordo @escritório /recup sex 11h !2`
 
 `title, notes, cat (pessoal|invista), sub, priority (1-4), status (todo|doing|waiting|done), createdAt, updatedAt, due (AAAA-MM-DD), dueTime (HH:MM), doneAt, waitingOn, estimate (min), tags[], checklist[{id,text,done}], recur (none|daily|weekdays|weekly|monthly|yearly), link`.
 
-Subcategorias ficam em `config/main`. Datas calculadas no fuso America/Sao_Paulo.
+Subcategorias e pessoas/áreas ficam em `config/main` (`subs`, `people`). Cada tarefa tem `people[]` (ids), independente da subcategoria: filtrar por uma pessoa mostra tudo que está com ela, em qualquer categoria. Na entrada rápida, `@nome` marca a pessoa se ela estiver cadastrada; senão vira "aguardando". Itens do checklist podem ser reordenados arrastando a alça (ou com as setas do teclado). Datas calculadas no fuso America/Sao_Paulo.
 
 ## Pauta Comitê
 
