@@ -398,6 +398,22 @@ textarea.inp{min-height:90px;resize:vertical}
 #comite .pick .help{padding:12px}
 
 .quick-hint:empty{display:none}
+.btn-filter{position:relative}
+.btn-filter .badge{font-family:var(--f-num);font-size:11px;background:var(--navy);color:var(--bg);border-radius:4px;padding:0 5px;line-height:18px}
+.btn-filter[data-on="true"]{border-color:var(--navy)}
+.fpanel .body{gap:18px}
+.fgroup{display:flex;flex-direction:column;gap:8px}
+.fgroup h3{margin:0;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.fopts{display:flex;flex-wrap:wrap;gap:6px}
+.fopts button{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:4px;padding:6px 10px;font-size:13px;font-weight:500}
+.fopts button small{font-family:var(--f-num);font-size:11px;color:var(--faint)}
+.fopts button[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:var(--bg)}
+.fopts button[aria-pressed="true"] small{color:var(--bg);opacity:.8}
+.fopts .catlbl{width:100%;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);margin-top:2px}
+.fchip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:2px 4px 2px 8px;border-radius:4px;background:var(--navy);color:var(--bg)}
+.fchip button{border:0;background:none;color:inherit;padding:0 2px;display:flex}
+.fchip button svg{width:13px;height:13px}
+.fclear{border:0;background:none;color:var(--muted);text-decoration:underline;font-size:12px;padding:2px 4px}
 .filterline:empty{display:none}
 .row .title{color:var(--ink)}
 .meta .sub-t{color:var(--muted)}
@@ -422,6 +438,7 @@ textarea.inp{min-height:90px;resize:vertical}
       <div><h1 id="view-title">Foco de hoje</h1><div class="date" id="today-label"></div></div>
       <div class="spacer"></div>
       <label class="search"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="sr">Buscar</span><input id="q" type="search" placeholder="Buscar tarefa"></label>
+      <button class="btn btn-filter" type="button" id="btn-filter" aria-label="Filtros"><svg class="i" viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg><span>Filtros</span><span class="badge" id="fbadge" hidden></span></button>
       <div class="seg layout-seg" role="group" aria-label="Modo de exibição">
         <button type="button" data-layout="lista"><svg class="i" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span>Lista</span></button>
         <button type="button" data-layout="quadro"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="4" height="13" rx="1"/></svg><span>Quadro</span></button>
@@ -479,6 +496,7 @@ textarea.inp{min-height:90px;resize:vertical}
 </section>
 <button class="fab" id="fab" type="button" aria-label="Nova tarefa"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
 <div id="drawer-root"></div>
+<div id="filter-root"></div>
 <div id="modal-root"></div>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <input type="file" id="import-file" accept=".json,application/json" hidden>
@@ -553,8 +571,18 @@ const clone = o => JSON.parse(JSON.stringify(o));
 /* ---------- estado ---------- */
 const S = { tasks: new Map(), config: defaultConfig(), mode: 'init', loaded: false, banner: null };
 const savedUI = lsGet(UI_KEY) || {};
-const UI = { view: savedUI.view || 'abertas', cat: savedUI.cat || null, sub: savedUI.sub || null, person: savedUI.person || null, layout: savedUI.layout || 'lista', q: '', quickCat: savedUI.quickCat || 'invista' };
-const persistUI = () => lsSet(UI_KEY, { view: UI.view, cat: UI.cat, sub: UI.sub, person: UI.person, layout: UI.layout, quickCat: UI.quickCat });
+const FKEYS = ['cats','subs','people','prios','status','due','extra'];
+const emptyF = () => Object.fromEntries(FKEYS.map(k => [k, []]));
+const F = (() => { const f = emptyF(); const sf = savedUI.f || {}; for (const k of FKEYS) if (Array.isArray(sf[k])) f[k] = sf[k]; return f; })();
+const UI = { view: savedUI.view || 'abertas', layout: savedUI.layout || 'lista', q: '', quickCat: savedUI.quickCat || 'invista' };
+const persistUI = () => lsSet(UI_KEY, { view: UI.view, f: F, layout: UI.layout, quickCat: UI.quickCat });
+const fCount = () => FKEYS.reduce((n,k) => n + F[k].length, 0);
+const oneSub = () => { if (F.subs.length !== 1) return null; const [cat, sub] = F.subs[0].split(':'); return sub === '__none' ? null : { cat, sub }; };
+const oneCat = () => F.cats.length === 1 ? F.cats[0] : (oneSub() ? oneSub().cat : null);
+const onePerson = () => F.people.length === 1 ? F.people[0] : null;
+const DUE_OPTS = [['atrasadas','Atrasadas'],['hoje','Hoje'],['semana','Próximos 7 dias'],['semdata','Sem data']];
+const EXTRA_OPTS = [['comite','Na Pauta Comitê'],['checklist','Checklist pendente'],['recorrente','Recorrentes']];
+const STATUS_OPTS = [['todo','A fazer'],['doing','Em andamento'],['waiting','Aguardando terceiros']];
 
 function defaultConfig(){
   const subs = {};
@@ -727,8 +755,8 @@ function addQuick(e){
   if (!p.title) { toast('Escreva o que precisa ser feito.'); return; }
   const cat = p.cat || UI.quickCat;
   const t = normalizeTask({
-    title: p.title, cat, sub: p.sub || (UI.cat === cat ? UI.sub || '' : ''), priority: p.priority || 3,
-    due: p.due, people: p.people.length ? p.people : (UI.person ? [UI.person] : []), waitingOn: p.waitingOn, status: p.waitingOn ? 'waiting' : 'todo',
+    title: p.title, cat, sub: p.sub || (oneSub() && oneSub().cat === cat ? oneSub().sub : ''), priority: p.priority || 3,
+    due: p.due, people: p.people.length ? p.people : (onePerson() ? [onePerson()] : []), waitingOn: p.waitingOn, status: p.waitingOn ? 'waiting' : 'todo',
     recur: p.recur || 'none', createdAt: new Date().toISOString()
   });
   Store.saveTask(t);
@@ -738,11 +766,25 @@ function addQuick(e){
 }
 
 /* ---------- filtros e agrupamento ---------- */
+function subMatch(t, k){ const [c, s] = k.split(':'); return t.cat === c && (s === '__none' ? (!t.sub || !subName(c, t.sub)) : t.sub === s); }
+function dueMatch(t, k, today){
+  if (k === 'semdata') return !t.due;
+  if (!t.due) return false;
+  const d = diffDays(t.due, today);
+  return k === 'atrasadas' ? d < 0 : k === 'hoje' ? d === 0 : d > 0 && d <= 7;
+}
 function inCatScope(t){
-  if (UI.person && !t.people.includes(UI.person)) return false;
-  if (UI.cat && t.cat !== UI.cat) return false;
-  if (UI.sub === '__none') return !t.sub || !subName(t.cat, t.sub);
-  if (UI.sub && t.sub !== UI.sub) return false;
+  const today = todayISO();
+  if ((F.cats.length || F.subs.length) && !(F.cats.includes(t.cat) || F.subs.some(k => subMatch(t, k)))) return false;
+  if (F.people.length && !F.people.some(id => t.people.includes(id))) return false;
+  if (F.prios.length && !F.prios.includes(t.priority)) return false;
+  if (F.status.length && !F.status.includes(t.status)) return false;
+  if (F.due.length && !F.due.some(k => dueMatch(t, k, today))) return false;
+  for (const x of F.extra) {
+    if (x === 'comite' && !(window.MN && MN.comite && MN.comite.caseForTask(t.id))) return false;
+    if (x === 'checklist' && !t.checklist.some(c => !c.done)) return false;
+    if (x === 'recorrente' && t.recur === 'none') return false;
+  }
   return true;
 }
 function inScope(t){
@@ -783,7 +825,8 @@ function render(){
   st.className = 'storage' + (S.mode === 'db' ? ' db' : '');
   st.querySelector('span').textContent = S.mode === 'db' ? (S.loaded ? 'Salvo na nuvem (privado)' : 'Carregando da nuvem…') : S.mode === 'local' ? 'Salvo só neste navegador' : 'Conectando…';
   const v = VIEWS.find(v => v[0] === UI.view);
-  $('#view-title').textContent = UI.person ? 'Com ' + (personName(UI.person) || '?') : (v ? v[1] : 'Afazeres');
+  $('#view-title').textContent = onePerson() && fCount() === 1 ? 'Com ' + (personName(onePerson()) || '?') : (v ? v[1] : 'Afazeres');
+  const fc = fCount(); const fb = $('#fbadge'); fb.hidden = !fc; fb.textContent = fc; $('#btn-filter').dataset.on = String(!!fc);
 }
 function renderNav(){
   const today = todayISO(); const all = [...S.tasks.values()];
@@ -796,25 +839,26 @@ function renderNav(){
   }).join('');
   $('#viewtabs').innerHTML = VIEWS.map(([id,label]) => { const n = scoped.filter(t => matchView(t,id,today)).length; return `<button type="button" data-view="${id}" aria-current="${UI.view===id}">${esc(label)}${id==='concluidas' ? '' : `<span class="num">${n}</span>`}</button>`; }).join('') + `<a href="#comite">Pauta Comitê →</a>`;
   const kn = window.MN && MN.comite ? MN.comite.count() : 0; $('#kcount').textContent = kn || '';
-  let html = `<button type="button" data-cat="" aria-current="${!UI.cat}">Todas as categorias<span class="cnt">${all.filter(isOpen).length}</span></button>`;
+  const noWhere = !F.cats.length && !F.subs.length;
+  let html = `<button type="button" data-cat="" aria-current="${noWhere}">Todas as categorias<span class="cnt">${all.filter(isOpen).length}</span></button>`;
   for (const c of Object.keys(CATS)) {
     const open = all.filter(t => isOpen(t) && t.cat === c);
-    html += `<button type="button" data-cat="${c}" aria-current="${UI.cat===c && !UI.sub}"><i class="dot ${c}"></i>${CATS[c]}<span class="cnt">${open.length}</span></button>`;
-    if (UI.cat === c || !UI.cat) {
+    html += `<button type="button" data-cat="${c}" aria-current="${F.cats.length===1 && F.cats[0]===c && !F.subs.length}"><i class="dot ${c}"></i>${CATS[c]}<span class="cnt">${open.length}</span></button>`;
+    if (oneCat() === c || noWhere) {
       for (const s of S.config.subs[c]) {
         const n = open.filter(t => t.sub === s.id).length;
-        if (UI.cat !== c && !n) continue;
-        html += `<button type="button" class="sub" data-cat="${c}" data-sub="${esc(s.id)}" aria-current="${UI.cat===c && UI.sub===s.id}">${esc(s.name)}<span class="cnt">${n||''}</span></button>`;
+        if (oneCat() !== c && !n) continue;
+        html += `<button type="button" class="sub" data-cat="${c}" data-sub="${esc(s.id)}" aria-current="${F.subs.length===1 && F.subs[0]===c+':'+s.id}">${esc(s.name)}<span class="cnt">${n||''}</span></button>`;
       }
       const none = open.filter(t => !t.sub || !subName(c,t.sub)).length;
-      if (UI.cat === c && none) html += `<button type="button" class="sub" data-cat="${c}" data-sub="__none" aria-current="${UI.cat===c && UI.sub==='__none'}">Sem subcategoria<span class="cnt">${none}</span></button>`;
+      if (oneCat() === c && none) html += `<button type="button" class="sub" data-cat="${c}" data-sub="__none" aria-current="${F.subs.length===1 && F.subs[0]===c+':__none'}">Sem subcategoria<span class="cnt">${none}</span></button>`;
     }
   }
   $('#nav-cats').innerHTML = html;
   const openAll = all.filter(isOpen);
   const ppl = S.config.people.map(x => [x, openAll.filter(t => t.people.includes(x.id)).length]);
-  $('#nav-people').innerHTML = ppl.map(([x,n]) => `<button type="button" data-person="${esc(x.id)}" aria-current="${UI.person===x.id}">${esc(x.name)}<span class="cnt">${n||''}</span></button>`).join('') || '<span class="help" style="padding-left:8px">Cadastre em Subcategorias e pessoas.</span>';
-  $('#peopletabs').innerHTML = ppl.length ? '<span class="lbl2">Com</span>' + ppl.map(([x,n]) => `<button type="button" data-person="${esc(x.id)}" aria-current="${UI.person===x.id}">${esc(x.name)}${n ? `<span class="num">${n}</span>` : ''}</button>`).join('') : '';
+  $('#nav-people').innerHTML = ppl.map(([x,n]) => `<button type="button" data-person="${esc(x.id)}" aria-current="${F.people.includes(x.id)}">${esc(x.name)}<span class="cnt">${n||''}</span></button>`).join('') || '<span class="help" style="padding-left:8px">Cadastre em Subcategorias e pessoas.</span>';
+  $('#peopletabs').innerHTML = ppl.length ? '<span class="lbl2">Com</span>' + ppl.map(([x,n]) => `<button type="button" data-person="${esc(x.id)}" aria-current="${F.people.includes(x.id)}">${esc(x.name)}${n ? `<span class="num">${n}</span>` : ''}</button>`).join('') : '';
 }
 function renderStats(){
   const today = todayISO(); const all = [...S.tasks.values()].filter(inCatScope);
@@ -838,10 +882,46 @@ function renderStats(){
     <div class="stat"><span class="k">Entregues 7 dias</span><span class="v">${done7.length}</span><span class="d">Concluídas desde ${esc(shortDate(since7))}</span></div>
     <div class="stat"><span class="k">No prazo 30 dias</span><span class="v">${rate}</span><span class="d">${done30d.length ? onTime + ' de ' + done30d.length + ' com vencimento' : 'Sem entregas com prazo'}</span></div>`;
 }
+function fLabel(k, v){
+  if (k === 'cats') return CATS[v] || v;
+  if (k === 'subs') { const [c, s] = v.split(':'); return s === '__none' ? CATS[c] + ' · sem subcategoria' : (subName(c, s) || s); }
+  if (k === 'people') return 'Com ' + (personName(v) || v);
+  if (k === 'prios') return 'P' + v;
+  if (k === 'status') return STATUS[v] || v;
+  if (k === 'due') return (DUE_OPTS.find(x => x[0] === v) || [,v])[1];
+  if (k === 'extra') return (EXTRA_OPTS.find(x => x[0] === v) || [,v])[1];
+  return v;
+}
+function toggleF(k, v){ const i = F[k].indexOf(v); if (i >= 0) F[k].splice(i, 1); else F[k].push(v); persistUI(); render(); if ($('#filter-root').innerHTML) renderFilterPanel(); }
+function setOnly(k, v){ for (const x of FKEYS) F[x] = []; if (k) F[k] = [v]; persistUI(); }
+function openFilterPanel(){ renderFilterPanel(); }
+function closeFilterPanel(){ $('#filter-root').innerHTML = ''; }
+function renderFilterPanel(){
+  const open = [...S.tasks.values()].filter(t => UI.view === 'concluidas' ? !isOpen(t) : isOpen(t));
+  const today = todayISO();
+  const cnt = fn => { const n = open.filter(fn).length; return n ? `<small>${n}</small>` : ''; };
+  const btn = (k, v, label, n) => `<button type="button" data-f="${k}" data-v="${esc(String(v))}" aria-pressed="${F[k].includes(v)}">${esc(label)}${n || ''}</button>`;
+  const subs = Object.keys(CATS).map(c => `<span class="catlbl"><i class="dot ${c}"></i>${CATS[c]}</span>` + btn('cats', c, 'Todas de ' + CATS[c], cnt(t => t.cat === c)) + S.config.subs[c].map(s => btn('subs', c + ':' + s.id, s.name, cnt(t => t.cat === c && t.sub === s.id))).join('') + btn('subs', c + ':__none', 'Sem subcategoria', cnt(t => t.cat === c && (!t.sub || !subName(c, t.sub))))).join('');
+  const total = filtered().length;
+  $('#filter-root').innerHTML = `<div class="scrim" data-fclose></div>
+  <aside class="drawer fpanel" role="dialog" aria-modal="true" aria-label="Filtros">
+    <header><span class="saved" style="font-size:15px;font-weight:700;color:var(--navy)">Filtros</span><button class="btn ghost" type="button" data-fclose aria-label="Fechar">${ICON.x}</button></header>
+    <div class="body">
+      <p class="help" style="margin:0">Dentro de um grupo vale qualquer opção marcada; entre grupos, todas precisam bater.</p>
+      <div class="fgroup"><h3>Pessoas e áreas</h3><div class="fopts">${S.config.people.map(x => btn('people', x.id, x.name, cnt(t => t.people.includes(x.id)))).join('') || '<span class="help">Nenhuma cadastrada.</span>'}</div></div>
+      <div class="fgroup"><h3>Prioridade</h3><div class="fopts">${[1,2,3,4].map(n => btn('prios', n, 'P' + n, cnt(t => t.priority === n))).join('')}</div></div>
+      <div class="fgroup"><h3>Prazo</h3><div class="fopts">${DUE_OPTS.map(([k,l]) => btn('due', k, l, cnt(t => dueMatch(t, k, today)))).join('')}</div></div>
+      <div class="fgroup"><h3>Status</h3><div class="fopts">${STATUS_OPTS.map(([k,l]) => btn('status', k, l, cnt(t => t.status === k))).join('')}</div></div>
+      <div class="fgroup"><h3>Categoria e subcategoria</h3><div class="fopts">${subs}</div></div>
+      <div class="fgroup"><h3>Outros</h3><div class="fopts">${EXTRA_OPTS.map(([k,l]) => btn('extra', k, l, '')).join('')}</div></div>
+    </div>
+    <footer><button class="btn" type="button" data-fclear ${fCount() ? '' : 'disabled'}>Limpar tudo</button><span style="flex:1"></span><button class="btn primary" type="button" data-fclose>Ver ${total} ${total === 1 ? 'tarefa' : 'tarefas'}</button></footer>
+  </aside>`;
+}
 function renderFilterline(){
   const parts = [];
-  if (UI.cat) parts.push(`<span class="chip ${UI.cat}"><i class="dot ${UI.cat}"></i>${CATS[UI.cat]}${UI.sub ? ' · ' + esc(UI.sub === '__none' ? 'Sem subcategoria' : subName(UI.cat, UI.sub)) : ''}<button type="button" data-clear="cat" aria-label="Limpar filtro de categoria">${ICON.x}</button></span>`);
-  if (UI.person) parts.push(`<span class="pchip">Com ${esc(personName(UI.person))}<button type="button" data-clear="person" aria-label="Limpar filtro de pessoa" style="border:0;background:none;padding:0;margin-left:2px;color:inherit;display:flex">${ICON.x}</button></span>`);
+  for (const k of FKEYS) for (const v of F[k]) parts.push(`<span class="fchip">${esc(fLabel(k, v))}<button type="button" data-unf="${k}" data-v="${esc(String(v))}" aria-label="Tirar filtro ${esc(fLabel(k, v))}">${ICON.x}</button></span>`);
+  if (fCount() > 1) parts.push(`<button type="button" class="fclear" data-clearall>Limpar filtros</button>`);
   if (UI.q) parts.push(`<span class="chip">Busca: ${esc(UI.q)}<button type="button" data-clear="q" aria-label="Limpar busca">${ICON.x}</button></span>`);
   const v = VIEWS.find(v => v[0] === UI.view);
   $('#filterline').innerHTML = parts.join('');
@@ -861,7 +941,7 @@ function metaHTML(t, opts={}){
   if (t.status === 'waiting' || t.waitingOn) m.push(`<span>${ICON.wait}${t.waitingOn ? 'Aguardando ' + esc(t.waitingOn) : 'Aguardando terceiros'}</span>`);
   if (t.checklist.length) m.push(`<span>${ICON.list}<span class="num">${t.checklist.filter(c=>c.done).length}/${t.checklist.length}</span></span>`);
   if (t.recur !== 'none') m.push(`<span title="${esc(RECUR[t.recur])}">${ICON.repeat}</span>`);
-  for (const id of t.people) if (id !== UI.person && personName(id)) m.push(`<span class="pchip">${esc(personName(id))}</span>`);
+  for (const id of t.people) if (id !== onePerson() && personName(id)) m.push(`<span class="pchip">${esc(personName(id))}</span>`);
   const kc = window.MN && MN.comite ? MN.comite.caseForTask(t.id) : null;
   if (kc) m.unshift(`<span class="chip kc" title="Na Pauta Comitê">Comitê ${esc(kc.week ? MN.comite.label(kc).replace('comitê de ','') : 'a programar')}</span>`);
   if (t.example) m.push(`<span class="tag-ex">Exemplo</span>`);
@@ -882,7 +962,7 @@ function rowHTML(t){
   const done = t.status === 'done';
   return `<div class="row ${done?'done':''}" data-id="${esc(t.id)}" tabindex="0" role="button" aria-label="Abrir ${esc(t.title)}">
     <button type="button" class="check ${done?'on':''}" data-p="${t.priority}" data-toggle="${esc(t.id)}" aria-label="${done?'Reabrir':'Concluir'} ${esc(t.title)}">${ICON.check}</button>
-    <div style="min-width:0"><div class="title">${esc(t.title)}</div><div class="meta">${metaHTML(t, {noCat: !!UI.sub})}</div></div>
+    <div style="min-width:0"><div class="title">${esc(t.title)}</div><div class="meta">${metaHTML(t, {noCat: !!oneSub()})}</div></div>
     ${dueHTML(t)}</div>`;
 }
 function emptyHTML(){
@@ -985,7 +1065,7 @@ const Drawer = { id: null, draft: null, isNew: false, timer: null, confirmDel: f
 function openDrawer(id, preset){
   if (Drawer.timer) flushDrawer();
   if (id) { const t = S.tasks.get(id); if (!t) return; Drawer.id = id; Drawer.draft = clone(t); Drawer.isNew = false; }
-  else { Drawer.draft = normalizeTask({ title: '', cat: UI.cat || UI.quickCat, sub: UI.cat && UI.sub !== '__none' ? (UI.sub || '') : '', due: UI.view === 'foco' ? todayISO() : '', ...preset }); Drawer.draft.title = ''; Drawer.id = Drawer.draft.id; Drawer.isNew = true; }
+  else { Drawer.draft = normalizeTask({ title: '', cat: oneCat() || UI.quickCat, sub: oneSub() ? oneSub().sub : '', people: onePerson() ? [onePerson()] : [], due: UI.view === 'foco' ? todayISO() : '', ...preset }); Drawer.draft.title = ''; Drawer.id = Drawer.draft.id; Drawer.isNew = true; }
   Drawer.confirmDel = false;
   renderDrawer();
   setTimeout(() => { const f = $('#f-title'); if (f && Drawer.isNew) f.focus(); }, 30);
@@ -1181,14 +1261,14 @@ function bindSettings(){
       const id = b.dataset.delpersonYes;
       S.config.people = S.config.people.filter(x => x.id !== id); Store.saveConfig();
       for (const t of [...S.tasks.values()]) if (t.people.includes(id)) { t.people = t.people.filter(x => x !== id); Store.saveTask(t); }
-      if (UI.person === id) { UI.person = null; persistUI(); }
+      F.people = F.people.filter(x => x !== id); persistUI();
       Modal.confirm = null; renderSettings(); render(); return;
     }
     if (b.dataset.delsubYes) {
       const [c,id] = b.dataset.delsubYes.split('|');
       S.config.subs[c] = S.config.subs[c].filter(s => s.id !== id); Store.saveConfig();
       for (const t of [...S.tasks.values()]) if (t.cat === c && t.sub === id) { t.sub = ''; Store.saveTask(t); }
-      if (UI.sub === id) { UI.sub = null; persistUI(); }
+      F.subs = F.subs.filter(k => k !== c + ':' + id); persistUI();
       Modal.confirm = null; renderSettings(); render(); return;
     }
     if (b.id === 'exp-json') return exportFile('pauta-backup-' + todayISO() + '.json', JSON.stringify({ app: 'pauta', version: 1, exportedAt: new Date().toISOString(), config: S.config, tasks: [...S.tasks.values()] }, null, 2));
@@ -1279,17 +1359,31 @@ function bind(){
   const pickPerson = e => {
     const b = e.target.closest('button[data-person]'); if (!b) return;
     const id = b.dataset.person;
-    if (UI.person === id) UI.person = null; else { UI.person = id; UI.view = 'abertas'; UI.cat = null; UI.sub = null; }
+    if (F.people.length === 1 && F.people[0] === id && fCount() === 1) setOnly(null); else { setOnly('people', id); UI.view = 'abertas'; }
     persistUI(); $('#side').classList.remove('open'); render(); window.scrollTo(0,0);
   };
   $('#nav-people').addEventListener('click', pickPerson);
   $('#peopletabs').addEventListener('click', pickPerson);
   $('#nav-cats').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    UI.cat = b.dataset.cat || null; UI.sub = b.dataset.sub || null; if (UI.cat) UI.quickCat = UI.cat;
+    const c = b.dataset.cat || null, sb = b.dataset.sub || null;
+    F.cats = []; F.subs = [];
+    if (c && sb) F.subs = [c + ':' + sb]; else if (c) F.cats = [c];
+    if (c) UI.quickCat = c;
     persistUI(); $('#side').classList.remove('open'); render(); quickHint();
   });
-  $('#filterline').addEventListener('click', e => { const b = e.target.closest('button[data-clear]'); if (!b) return; if (b.dataset.clear === 'cat') { UI.cat = null; UI.sub = null; persistUI(); } else if (b.dataset.clear === 'person') { UI.person = null; persistUI(); } else { UI.q = ''; $('#q').value = ''; } render(); });
+  $('#filterline').addEventListener('click', e => { const b = e.target.closest('button[data-clear]'); if (!b) return; if (b.dataset.clear === 'q') { UI.q = ''; $('#q').value = ''; } render(); });
+  $('#filterline').addEventListener('click', e => {
+    const u = e.target.closest('[data-unf]'); if (u) { const k = u.dataset.unf; const v = k === 'prios' ? +u.dataset.v : u.dataset.v; toggleF(k, v); return; }
+    if (e.target.closest('[data-clearall]')) { setOnly(null); render(); }
+  });
+  $('#btn-filter').addEventListener('click', openFilterPanel);
+  $('#filter-root').addEventListener('click', e => {
+    if (e.target.closest('[data-fclose]')) { closeFilterPanel(); return; }
+    if (e.target.closest('[data-fclear]')) { setOnly(null); render(); renderFilterPanel(); return; }
+    const b = e.target.closest('button[data-f]'); if (!b) return;
+    const k = b.dataset.f; toggleF(k, k === 'prios' ? +b.dataset.v : b.dataset.v);
+  });
   $('#banner').addEventListener('click', e => {
     if (e.target.id === 'btn-clear-ex') { const ex = [...S.tasks.values()].filter(t => t.example); ex.forEach(t => Store.deleteTask(t.id)); toast(ex.length + ' exemplos apagados.'); }
   });
@@ -1300,7 +1394,7 @@ function bind(){
   $('#content').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-id]')) { e.preventDefault(); openDrawer(e.target.dataset.id); } });
   document.addEventListener('keydown', e => {
     const typing = e.target.matches('input,textarea,select');
-    if (e.key === 'Escape' && location.hash !== '#comite') { if ($('#modal-root').innerHTML) { $('#modal-root').innerHTML = ''; return; } if (Drawer.draft) { closeDrawer(); return; } $('#side').classList.remove('open'); }
+    if (e.key === 'Escape' && location.hash !== '#comite') { if ($('#filter-root').innerHTML) { closeFilterPanel(); return; } if ($('#modal-root').innerHTML) { $('#modal-root').innerHTML = ''; return; } if (Drawer.draft) { closeDrawer(); return; } $('#side').classList.remove('open'); }
     if (typing || e.metaKey || e.ctrlKey || e.altKey || location.hash === '#comite') return;
     if (e.key === 'n' || e.key === 'N') { e.preventDefault(); $('#quick-input').focus(); }
     if (e.key === '/') { e.preventDefault(); $('#q').focus(); }
@@ -1316,7 +1410,7 @@ const MN = window.MN = window.MN || {};
 MN.tasks = () => S.tasks;
 MN.subName = t => CATS[t.cat] + (t.sub && subName(t.cat, t.sub) ? ' · ' + subName(t.cat, t.sub) : '');
 MN.openTask = id => { location.hash = 'afazeres'; setTimeout(() => openDrawer(id), 0); };
-document.addEventListener('mn:cases', () => { render(); const b = $('#d-comite'); if (b && Drawer.draft) b.innerHTML = comiteBlock(Drawer.draft); });
+document.addEventListener('mn:cases', () => { render(); if ($('#filter-root').innerHTML) renderFilterPanel(); const b = $('#d-comite'); if (b && Drawer.draft) b.innerHTML = comiteBlock(Drawer.draft); });
 function route(){
   const k = location.hash === '#comite';
   $('.app').hidden = k; $('#comite').hidden = !k; $('#fab').hidden = k;
