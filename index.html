@@ -211,6 +211,15 @@ textarea.inp{min-height:90px;resize:vertical}
 .catseg button[aria-pressed="true"]{background:var(--navy);color:var(--bg)}
 .catseg button[aria-pressed="true"] .num{color:var(--bg);opacity:.8}
 .catseg .dot{width:8px;height:8px}
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.subtabs .lbl2{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);padding-right:2px}
+.subtabs button{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:4px;padding:5px 10px;font-weight:500;font-size:13px;white-space:nowrap}
+.subtabs button .num{font-size:11px;color:var(--faint)}
+.subtabs button[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:var(--bg)}
+.subtabs button[aria-pressed="true"] .num{color:var(--bg);opacity:.8}
+.subtabs .dot{width:7px;height:7px}
+.subtabs:empty{display:none}
+@media (max-width:900px){.subtabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-4px;padding:2px 4px}.subtabs::-webkit-scrollbar{display:none}.subtabs button,.subtabs .lbl2{flex:none}}
 @media (max-width:520px){.catseg{align-self:stretch}.catseg button{flex:1;justify-content:center;padding:8px 6px}}
 .peopletabs{display:none;gap:6px;overflow-x:auto;scrollbar-width:none;margin-inline:-4px;padding:2px 4px}
 .peopletabs::-webkit-scrollbar{display:none}
@@ -456,6 +465,7 @@ textarea.inp{min-height:90px;resize:vertical}
     </div>
 
     <div class="catseg" id="catseg" role="group" aria-label="Pessoal ou Invista"></div>
+    <div class="subtabs" id="subtabs" role="group" aria-label="Subcategorias"></div>
     <nav class="viewtabs" id="viewtabs" aria-label="Visões"></nav>
     <nav class="peopletabs" id="peopletabs" aria-label="Pessoas e áreas"></nav>
 
@@ -836,8 +846,17 @@ function render(){
   const v = VIEWS.find(v => v[0] === UI.view);
   $('#view-title').textContent = onePerson() && fCount() === 1 ? 'Com ' + (personName(onePerson()) || '?') : (v ? v[1] : 'Afazeres');
   { const sv = [F.cats, F.subs]; F.cats = []; F.subs = []; const all = [...S.tasks.values()].filter(t => (UI.view === 'concluidas' ? !isOpen(t) : isOpen(t)) && inCatScope(t)); F.cats = sv[0]; F.subs = sv[1];
-    const cur = F.cats.length === 1 && !F.subs.length ? F.cats[0] : (!F.cats.length && !F.subs.length ? '' : null);
-    $('#catseg').innerHTML = [['', 'Tudo'], ['pessoal', 'Pessoal'], ['invista', 'Invista']].map(([c, l]) => `<button type="button" data-catseg="${c}" aria-pressed="${cur === c}">${c ? `<i class="dot ${c}"></i>` : ''}${l}<span class="num">${all.filter(t => !c || t.cat === c).length}</span></button>`).join(''); }
+    const sc = new Set([...F.cats, ...F.subs.map(k => k.split(':')[0])]);
+    const cur = sc.size === 1 ? [...sc][0] : (sc.size === 0 ? '' : null);
+    $('#catseg').innerHTML = [['', 'Tudo'], ['pessoal', 'Pessoal'], ['invista', 'Invista']].map(([c, l]) => `<button type="button" data-catseg="${c}" aria-pressed="${cur === c}">${c ? `<i class="dot ${c}"></i>` : ''}${l}<span class="num">${all.filter(t => !c || t.cat === c).length}</span></button>`).join('');
+    const cats = cur ? [cur] : Object.keys(CATS);
+    const opts = [];
+    for (const c of cats) {
+      for (const sb of S.config.subs[c]) opts.push([c + ':' + sb.id, c, sb.name, all.filter(t => t.cat === c && t.sub === sb.id).length]);
+      opts.push([c + ':__none', c, 'Sem subcategoria', all.filter(t => t.cat === c && (!t.sub || !subName(c, t.sub))).length]);
+    }
+    const shown = opts.filter(([k,,,n]) => n || F.subs.includes(k));
+    $('#subtabs').innerHTML = shown.length ? '<span class="lbl2">Sub</span>' + shown.map(([k, c, l, n]) => `<button type="button" data-subtab="${esc(k)}" aria-pressed="${F.subs.includes(k)}">${cur ? '' : `<i class="dot ${c}"></i>`}${esc(l)}<span class="num">${n}</span></button>`).join('') : ''; }
   const fc = fCount(); const fb = $('#fbadge'); fb.hidden = !fc; fb.textContent = fc; $('#btn-filter').dataset.on = String(!!fc);
 }
 function renderNav(){
@@ -1377,9 +1396,18 @@ function bind(){
   };
   $('#nav-people').addEventListener('click', pickPerson);
   $('#peopletabs').addEventListener('click', pickPerson);
+  $('#subtabs').addEventListener('click', e => {
+    const b = e.target.closest('button[data-subtab]'); if (!b) return;
+    const k = b.dataset.subtab; const c = k.split(':')[0];
+    if (UI.catPinned === undefined) UI.catPinned = F.cats.length === 1 ? F.cats[0] : '';
+    F.cats = F.cats.filter(x => x !== c);
+    const i = F.subs.indexOf(k); if (i >= 0) F.subs.splice(i, 1); else F.subs.push(k);
+    if (!F.subs.length && !F.cats.length && UI.catPinned) F.cats = [UI.catPinned];
+    UI.quickCat = c; persistUI(); render(); quickHint();
+  });
   $('#catseg').addEventListener('click', e => {
     const b = e.target.closest('button[data-catseg]'); if (!b) return;
-    const c = b.dataset.catseg; F.cats = c ? [c] : []; F.subs = []; if (c) UI.quickCat = c;
+    const c = b.dataset.catseg; F.cats = c ? [c] : []; F.subs = []; UI.catPinned = c; if (c) UI.quickCat = c;
     persistUI(); render(); quickHint();
   });
   $('#nav-cats').addEventListener('click', e => {
