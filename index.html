@@ -204,6 +204,14 @@ textarea.inp{min-height:90px;resize:vertical}
 .people-pick button[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:var(--bg)}
 .people-pick input{border:1px dashed var(--line);background:none;border-radius:4px;padding:5px 8px;font-size:13px;width:130px;outline:none}
 .people-pick input:focus{border-color:var(--focus)}
+.catseg{display:flex;gap:0;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--surface);align-self:flex-start;max-width:100%}
+.catseg button{border:0;border-left:1px solid var(--line);background:none;padding:8px 16px;font-weight:600;font-size:14px;color:var(--muted);display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.catseg button:first-child{border-left:0}
+.catseg button .num{font-size:12px;font-weight:500;color:var(--faint)}
+.catseg button[aria-pressed="true"]{background:var(--navy);color:var(--bg)}
+.catseg button[aria-pressed="true"] .num{color:var(--bg);opacity:.8}
+.catseg .dot{width:8px;height:8px}
+@media (max-width:520px){.catseg{align-self:stretch}.catseg button{flex:1;justify-content:center;padding:8px 6px}}
 .peopletabs{display:none;gap:6px;overflow-x:auto;scrollbar-width:none;margin-inline:-4px;padding:2px 4px}
 .peopletabs::-webkit-scrollbar{display:none}
 .peopletabs button{flex:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--navy);border-radius:4px;padding:5px 10px;font-weight:600;font-size:12.5px;white-space:nowrap}
@@ -447,6 +455,7 @@ textarea.inp{min-height:90px;resize:vertical}
       <button class="btn primary" id="btn-new" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Nova</button>
     </div>
 
+    <div class="catseg" id="catseg" role="group" aria-label="Pessoal ou Invista"></div>
     <nav class="viewtabs" id="viewtabs" aria-label="Visões"></nav>
     <nav class="peopletabs" id="peopletabs" aria-label="Pessoas e áreas"></nav>
 
@@ -826,6 +835,9 @@ function render(){
   st.querySelector('span').textContent = S.mode === 'db' ? (S.loaded ? 'Salvo na nuvem (privado)' : 'Carregando da nuvem…') : S.mode === 'local' ? 'Salvo só neste navegador' : 'Conectando…';
   const v = VIEWS.find(v => v[0] === UI.view);
   $('#view-title').textContent = onePerson() && fCount() === 1 ? 'Com ' + (personName(onePerson()) || '?') : (v ? v[1] : 'Afazeres');
+  { const sv = [F.cats, F.subs]; F.cats = []; F.subs = []; const all = [...S.tasks.values()].filter(t => (UI.view === 'concluidas' ? !isOpen(t) : isOpen(t)) && inCatScope(t)); F.cats = sv[0]; F.subs = sv[1];
+    const cur = F.cats.length === 1 && !F.subs.length ? F.cats[0] : (!F.cats.length && !F.subs.length ? '' : null);
+    $('#catseg').innerHTML = [['', 'Tudo'], ['pessoal', 'Pessoal'], ['invista', 'Invista']].map(([c, l]) => `<button type="button" data-catseg="${c}" aria-pressed="${cur === c}">${c ? `<i class="dot ${c}"></i>` : ''}${l}<span class="num">${all.filter(t => !c || t.cat === c).length}</span></button>`).join(''); }
   const fc = fCount(); const fb = $('#fbadge'); fb.hidden = !fc; fb.textContent = fc; $('#btn-filter').dataset.on = String(!!fc);
 }
 function renderNav(){
@@ -901,18 +913,19 @@ function renderFilterPanel(){
   const today = todayISO();
   const cnt = fn => { const n = open.filter(fn).length; return n ? `<small>${n}</small>` : ''; };
   const btn = (k, v, label, n) => `<button type="button" data-f="${k}" data-v="${esc(String(v))}" aria-pressed="${F[k].includes(v)}">${esc(label)}${n || ''}</button>`;
-  const subs = Object.keys(CATS).map(c => `<span class="catlbl"><i class="dot ${c}"></i>${CATS[c]}</span>` + btn('cats', c, 'Todas de ' + CATS[c], cnt(t => t.cat === c)) + S.config.subs[c].map(s => btn('subs', c + ':' + s.id, s.name, cnt(t => t.cat === c && t.sub === s.id))).join('') + btn('subs', c + ':__none', 'Sem subcategoria', cnt(t => t.cat === c && (!t.sub || !subName(c, t.sub))))).join('');
+  const subs = Object.keys(CATS).map(c => `<span class="catlbl"><i class="dot ${c}"></i>${CATS[c]}</span>` + S.config.subs[c].map(s => btn('subs', c + ':' + s.id, s.name, cnt(t => t.cat === c && t.sub === s.id))).join('') + btn('subs', c + ':__none', 'Sem subcategoria', cnt(t => t.cat === c && (!t.sub || !subName(c, t.sub))))).join('');
   const total = filtered().length;
   $('#filter-root').innerHTML = `<div class="scrim" data-fclose></div>
   <aside class="drawer fpanel" role="dialog" aria-modal="true" aria-label="Filtros">
     <header><span class="saved" style="font-size:15px;font-weight:700;color:var(--navy)">Filtros</span><button class="btn ghost" type="button" data-fclose aria-label="Fechar">${ICON.x}</button></header>
     <div class="body">
       <p class="help" style="margin:0">Dentro de um grupo vale qualquer opção marcada; entre grupos, todas precisam bater.</p>
+      <div class="fgroup"><h3>Categoria</h3><div class="fopts">${Object.keys(CATS).map(c => btn('cats', c, CATS[c], cnt(t => t.cat === c))).join('')}</div></div>
       <div class="fgroup"><h3>Pessoas e áreas</h3><div class="fopts">${S.config.people.map(x => btn('people', x.id, x.name, cnt(t => t.people.includes(x.id)))).join('') || '<span class="help">Nenhuma cadastrada.</span>'}</div></div>
       <div class="fgroup"><h3>Prioridade</h3><div class="fopts">${[1,2,3,4].map(n => btn('prios', n, 'P' + n, cnt(t => t.priority === n))).join('')}</div></div>
       <div class="fgroup"><h3>Prazo</h3><div class="fopts">${DUE_OPTS.map(([k,l]) => btn('due', k, l, cnt(t => dueMatch(t, k, today)))).join('')}</div></div>
       <div class="fgroup"><h3>Status</h3><div class="fopts">${STATUS_OPTS.map(([k,l]) => btn('status', k, l, cnt(t => t.status === k))).join('')}</div></div>
-      <div class="fgroup"><h3>Categoria e subcategoria</h3><div class="fopts">${subs}</div></div>
+      <div class="fgroup"><h3>Subcategoria</h3><div class="fopts">${subs}</div></div>
       <div class="fgroup"><h3>Outros</h3><div class="fopts">${EXTRA_OPTS.map(([k,l]) => btn('extra', k, l, '')).join('')}</div></div>
     </div>
     <footer><button class="btn" type="button" data-fclear ${fCount() ? '' : 'disabled'}>Limpar tudo</button><span style="flex:1"></span><button class="btn primary" type="button" data-fclose>Ver ${total} ${total === 1 ? 'tarefa' : 'tarefas'}</button></footer>
@@ -1364,6 +1377,11 @@ function bind(){
   };
   $('#nav-people').addEventListener('click', pickPerson);
   $('#peopletabs').addEventListener('click', pickPerson);
+  $('#catseg').addEventListener('click', e => {
+    const b = e.target.closest('button[data-catseg]'); if (!b) return;
+    const c = b.dataset.catseg; F.cats = c ? [c] : []; F.subs = []; if (c) UI.quickCat = c;
+    persistUI(); render(); quickHint();
+  });
   $('#nav-cats').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     const c = b.dataset.cat || null, sb = b.dataset.sub || null;
