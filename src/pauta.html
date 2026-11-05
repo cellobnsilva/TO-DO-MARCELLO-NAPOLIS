@@ -212,6 +212,9 @@ textarea.inp{min-height:90px;resize:vertical}
 .subtabs button[aria-pressed="true"] .num{color:var(--bg);opacity:.8}
 .subtabs .dot{width:7px;height:7px}
 .subtabs:empty{display:none}
+.pdot{width:9px;height:9px;border-radius:50%;border:2px solid var(--p4);flex:none}
+.pdot.p1{border-color:var(--p1)} .pdot.p2{border-color:var(--p2)} .pdot.p3{border-color:var(--p3)}
+.subtabs button[aria-pressed="true"] .pdot{border-color:var(--bg)}
 @media (max-width:900px){.subtabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-4px;padding:2px 4px}.subtabs::-webkit-scrollbar{display:none}.subtabs button,.subtabs .lbl2{flex:none}}
 @media (max-width:520px){.catseg{align-self:stretch}.catseg button{flex:1;justify-content:center;padding:8px 6px}}
 .peopletabs{display:none;gap:6px;overflow-x:auto;scrollbar-width:none;margin-inline:-4px;padding:2px 4px}
@@ -459,6 +462,7 @@ textarea.inp{min-height:90px;resize:vertical}
 
     <div class="catseg" id="catseg" role="group" aria-label="Pessoal ou Invista"></div>
     <div class="subtabs" id="subtabs" role="group" aria-label="Subcategorias"></div>
+    <div class="subtabs" id="priotabs" role="group" aria-label="Prioridade"></div>
     <nav class="viewtabs" id="viewtabs" aria-label="Visões"></nav>
     <nav class="peopletabs" id="peopletabs" aria-label="Pessoas e áreas"></nav>
 
@@ -527,7 +531,7 @@ const ESTIM = { '': 'Sem estimativa', 15: '15 min', 30: '30 min', 60: '1 h', 120
 const DEFAULT_PEOPLE = [['pedro-felipe','Pedro Felipe'],['eric','Eric'],['lucas','Lucas'],['buy-side','Buy Side'],['juridico','Jurídico'],['investimentos','Investimentos'],['ppa','PPA']];
 const DEFAULT_SUBS = {
   pessoal: [['saude','Saúde e treino'],['familia','Família'],['financas','Finanças e investimentos'],['casa','Casa e burocracia'],['carreira','Carreira e estudo']],
-  invista: [['originacao','Originação'],['diligencia','Due diligence'],['recuperacao','Cobrança e recuperação'],['juridico','Jurídico'],['comite','Comitê e aprovações'],['investidores','Investidores e relatórios'],['gestao','Gestão e equipe']]
+  invista: [['urgentes','Casos urgentes'],['dar-retorno','Dar retorno'],['originacao','Prospecção'],['gestao','Gestão e equipe']]
 };
 const VIEWS = [
   ['abertas','Tudo em uma lista','Todas as abertas numa lista só, por prioridade e prazo'],
@@ -849,7 +853,9 @@ function render(){
       opts.push([c + ':__none', c, 'Sem subcategoria', all.filter(t => t.cat === c && (!t.sub || !subName(c, t.sub))).length]);
     }
     const shown = opts.filter(([k,,,n]) => n || F.subs.includes(k));
-    $('#subtabs').innerHTML = shown.length ? '<span class="lbl2">Sub</span>' + shown.map(([k, c, l, n]) => `<button type="button" data-subtab="${esc(k)}" aria-pressed="${F.subs.includes(k)}">${cur ? '' : `<i class="dot ${c}"></i>`}${esc(l)}<span class="num">${n}</span></button>`).join('') : ''; }
+    $('#subtabs').innerHTML = shown.length ? '<span class="lbl2">Sub</span>' + shown.map(([k, c, l, n]) => `<button type="button" data-subtab="${esc(k)}" aria-pressed="${F.subs.includes(k)}">${cur ? '' : `<i class="dot ${c}"></i>`}${esc(l)}<span class="num">${n}</span></button>`).join('') : '';
+    const sp = F.prios; F.prios = []; const base = [...S.tasks.values()].filter(t => (UI.view === 'concluidas' ? !isOpen(t) : isOpen(t)) && inCatScope(t)); F.prios = sp;
+    $('#priotabs').innerHTML = '<span class="lbl2">Prio</span>' + [1,2,3,4].map(n => `<button type="button" data-priotab="${n}" aria-pressed="${F.prios.includes(n)}" title="${esc(PRIO[n])}"><i class="pdot p${n}"></i>P${n}<span class="num">${base.filter(t => t.priority === n).length}</span></button>`).join(''); }
   const fc = fCount(); const fb = $('#fbadge'); fb.hidden = !fc; fb.textContent = fc; $('#btn-filter').dataset.on = String(!!fc);
 }
 function renderNav(){
@@ -1389,6 +1395,10 @@ function bind(){
   };
   $('#nav-people').addEventListener('click', pickPerson);
   $('#peopletabs').addEventListener('click', pickPerson);
+  $('#priotabs').addEventListener('click', e => {
+    const b = e.target.closest('button[data-priotab]'); if (!b) return;
+    toggleF('prios', +b.dataset.priotab);
+  });
   $('#subtabs').addEventListener('click', e => {
     const b = e.target.closest('button[data-subtab]'); if (!b) return;
     const k = b.dataset.subtab; const c = k.split(':')[0];
